@@ -3710,6 +3710,175 @@ loadFloors();
 
 </script>
 
+
+
+<!-- Bulle d'anomalies : alimentée par l'API FastAPI, jamais directement par MongoDB. -->
+<style id="room-anomaly-popup-style">
+#roomAnomalyPopup{
+  position:fixed;
+  z-index:1000;
+  display:none;
+  width:min(380px, calc(100vw - 32px));
+  max-height:min(420px, calc(100vh - 32px));
+  overflow:auto;
+  padding:15px;
+  border:1px solid #31506f;
+  border-radius:12px;
+  background:rgba(13,25,40,.97);
+  box-shadow:0 18px 50px rgba(0,0,0,.45);
+  color:#eaf2ff;
+  font-size:12px;
+  line-height:1.5;
+}
+#roomAnomalyPopup.open{display:block}
+.roomAnomalyHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.roomAnomalyTitle{font-size:15px;font-weight:700}
+.roomAnomalyMeta{color:#8ea3bb;font-size:11px;margin-top:2px}
+.roomAnomalyClose{width:auto;margin:0;padding:4px 8px;border:0;background:transparent;color:#8ea3bb;font-size:16px}
+.roomAnomalyItem{padding:10px 0;border-top:1px solid #21334a}
+.roomAnomalyItem:first-child{border-top:0}
+.roomAnomalyBadge{display:inline-block;margin-bottom:5px;padding:2px 7px;border-radius:999px;background:#542020;color:#fecaca;font-size:10px;font-weight:700}
+.roomAnomalyEmpty{color:#8ea3bb}
+.roomAnomalyJson{margin:7px 0 0;padding:8px;border-radius:7px;background:#08121f;color:#b9d9ff;white-space:pre-wrap;overflow:auto;font-size:10px}
+</style>
+
+<script>
+(function(){
+  const popup = document.createElement('div');
+  popup.id = 'roomAnomalyPopup';
+  popup.innerHTML = '<div class="roomAnomalyHeader"><div><div id="roomAnomalyTitle" class="roomAnomalyTitle">Anomalies</div><div id="roomAnomalyMeta" class="roomAnomalyMeta"></div></div><button class="roomAnomalyClose" type="button" aria-label="Fermer">×</button></div><div id="roomAnomalyBody"></div>';
+  document.body.appendChild(popup);
+
+  const title = popup.querySelector('#roomAnomalyTitle');
+  const meta = popup.querySelector('#roomAnomalyMeta');
+  const body = popup.querySelector('#roomAnomalyBody');
+
+  popup.querySelector('.roomAnomalyClose').addEventListener('click', () => popup.classList.remove('open'));
+
+  function roomFromElement(room){
+    return (currentFloorData?.spaces || []).find(item =>
+      String(item.id || '') === String(room.dataset.roomId || room.dataset.spaceId || '') ||
+      String(item.code || item.roomCode || item.name || item.Name || '') === String(room.dataset.roomCode || room.dataset.code || '')
+    ) || {
+      id: room.dataset.roomId || room.dataset.spaceId || '',
+      code: room.dataset.roomCode || room.dataset.code || '',
+      name: room.dataset.roomName || '',
+      longName: room.dataset.roomName || ''
+    };
+  }
+
+  function anomalyText(item){
+    if(item === null || item === undefined) return 'Anomalie';
+    if(typeof item === 'string') return item;
+    if(typeof item !== 'object') return String(item);
+
+    return item.message ||
+      item.description ||
+      item.summary ||
+      item.title ||
+      item.type ||
+      item.anomaly ||
+      item.label ||
+      'Anomalie détectée';
+  }
+
+  function anomalyDetails(item){
+    if(typeof item !== 'object' || item === null) return '';
+    const ignored = new Set(['_id','message','description','summary','title','type','anomaly','label']);
+    const details = Object.fromEntries(Object.entries(item).filter(([key]) => !ignored.has(key)));
+    return Object.keys(details).length ? JSON.stringify(details, null, 2) : '';
+  }
+
+  function normalizeAnomalies(payload){
+    if(!payload) return [];
+    if(Array.isArray(payload)) return payload;
+    if(Array.isArray(payload.anomalies)) return payload.anomalies;
+
+    // Compatibilité avec un document Mongo contenant directement
+    // un tableau "anomaly"/"anomalies".
+    if(payload.anomaly) return Array.isArray(payload.anomaly) ? payload.anomaly : [payload.anomaly];
+    return [payload];
+  }
+
+  function positionPopup(room){
+    const rect = room.getBoundingClientRect();
+    const width = Math.min(380, window.innerWidth - 32);
+    let left = rect.right + 12;
+    if(left + width > window.innerWidth - 16) left = rect.left - width - 12;
+    left = Math.max(16, left);
+
+    let top = rect.top;
+    const maxTop = window.innerHeight - Math.min(420, window.innerHeight - 32) - 16;
+    top = Math.max(16, Math.min(top, maxTop));
+
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+  }
+
+  async function loadRoomAnomalies(room){
+    const space = roomFromElement(room);
+    const floor = floorSel?.value || currentFloorData?.floor?.name || '';
+    const params = new URLSearchParams();
+    if(floor) params.set('floor', floor);
+    if(space.id) params.set('room_id', space.id);
+    if(space.code) params.set('code', space.code);
+    if(space.name || space.longName) params.set('name', space.longName || space.name);
+
+    title.textContent = space.longName || space.name || space.code || 'Salle';
+    meta.textContent = [space.code ? 'Code ' + space.code : '', floor].filter(Boolean).join(' · ');
+    body.innerHTML = '<div class="roomAnomalyEmpty">Recherche des anomalies…</div>';
+    popup.classList.add('open');
+    positionPopup(room);
+
+    try{
+      const response = await fetch(API + '/anomalies?' + params.toString(), {cache:'no-store'});
+      const payload = await response.json();
+
+      if(!response.ok || payload.ok === false){
+        throw new Error(payload.error || 'Impossible de lire MongoDB');
+      }
+
+      const anomalies = normalizeAnomalies(payload);
+      if(!anomalies.length){
+        body.innerHTML = '<div class="roomAnomalyEmpty">Aucune anomalie trouvée pour cette salle.</div>';
+        return;
+      }
+
+      body.innerHTML = anomalies.map((item, index) => {
+        const details = anomalyDetails(item);
+        return '<div class="roomAnomalyItem">' +
+          '<span class="roomAnomalyBadge">ANOMALIE ' + (index + 1) + '</span>' +
+          '<div>' + escapeHtml(anomalyText(item)) + '</div>' +
+          (details ? '<pre class="roomAnomalyJson">' + escapeHtml(details) + '</pre>' : '') +
+          '</div>';
+      }).join('');
+    }catch(error){
+      body.innerHTML = '<div class="roomAnomalyEmpty">Impossible de récupérer les anomalies.<br>' +
+        escapeHtml(error.message) + '</div>';
+    }
+  }
+
+  // Délégation : fonctionne aussi après changement d'étage / rechargement du SVG.
+  spaceGroup.addEventListener('click', event => {
+    if(editorAddMode) return;
+    const room = event.target.closest('.ifc-space');
+    if(!room) return;
+    loadRoomAnomalies(room);
+  });
+
+  document.addEventListener('click', event => {
+    if(!popup.classList.contains('open')) return;
+    if(event.target.closest('#roomAnomalyPopup') || event.target.closest('.ifc-space')) return;
+    popup.classList.remove('open');
+  });
+
+  window.addEventListener('resize', () => {
+    const room = spaceGroup.querySelector('.room-selected');
+    if(room && popup.classList.contains('open')) positionPopup(room);
+  });
+})();
+</script>
+
 </body>
 
 </html>
