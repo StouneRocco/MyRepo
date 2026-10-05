@@ -1,0 +1,3715 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
+
+<title>Visualiseur IFC — Campus Dijon</title>
+
+<style>
+
+/* ============================================================
+   VARIABLES
+   ============================================================ */
+
+:root{
+
+  --bg:#07101d;
+  --panel:#0d1928;
+  --panel2:#111f31;
+  --line:#21334a;
+
+  --text:#eaf2ff;
+  --muted:#8ea3bb;
+
+  --accent:#4da3ff;
+
+  --wall:#e8f1fb;
+  --door:#58d68d;
+  --window:#55b7ff;
+
+  --space:#263e57;
+  --space-border:#577da3;
+
+}
+
+
+/* ============================================================
+   GLOBAL
+   ============================================================ */
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+
+  margin:0;
+  width:100%;
+  height:100%;
+
+}
+
+body{
+
+  background:var(--bg);
+  color:var(--text);
+
+  font-family:
+    Inter,
+    system-ui,
+    Arial,
+    sans-serif;
+
+}
+
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+
+.layout{
+
+  display:grid;
+
+  grid-template-columns:
+    260px
+    1fr;
+
+  width:100%;
+  height:100vh;
+
+}
+
+
+/* ============================================================
+   PANNEAU GAUCHE
+   ============================================================ */
+
+aside{
+
+  background:var(--panel);
+
+  padding:22px;
+
+  border-right:
+    1px solid var(--line);
+
+  overflow:auto;
+
+}
+
+
+/* ============================================================
+   TITRES
+   ============================================================ */
+
+h3{
+
+  font-size:11px;
+
+  text-transform:uppercase;
+
+  letter-spacing:.12em;
+
+  color:var(--muted);
+
+  margin:
+    8px 0 12px;
+
+}
+
+
+/* ============================================================
+   SELECT
+   ============================================================ */
+
+select{
+
+  width:100%;
+
+  background:var(--panel2);
+
+  color:var(--text);
+
+  border:
+    1px solid var(--line);
+
+  border-radius:9px;
+
+  padding:11px;
+
+  margin-bottom:12px;
+
+  cursor:pointer;
+
+}
+
+
+/* ============================================================
+   BOUTONS
+   ============================================================ */
+
+button{
+
+  width:100%;
+
+  background:var(--panel2);
+
+  color:var(--text);
+
+  border:
+    1px solid var(--line);
+
+  border-radius:9px;
+
+  padding:11px;
+
+  margin-bottom:9px;
+
+  cursor:pointer;
+
+}
+
+button:hover{
+
+  border-color:var(--accent);
+
+}
+
+button.active{
+
+  border-color:var(--accent);
+
+  background:#123052;
+
+}
+
+
+/* ============================================================
+   INFORMATIONS ETAGE
+   ============================================================ */
+
+#floorInfo{
+
+  color:var(--muted);
+
+  font-size:12px;
+
+  line-height:1.5;
+
+  margin:
+    -3px 0 18px 2px;
+
+}
+
+
+/* ============================================================
+   VIEWER
+   ============================================================ */
+
+.viewer{
+
+  position:relative;
+
+  overflow:hidden;
+
+  background:#08121f;
+
+}
+
+
+/* ============================================================
+   PLAN
+   ============================================================ */
+
+#plan{
+
+  position:absolute;
+
+  inset:0;
+
+  overflow:hidden;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  background:
+
+    linear-gradient(
+      rgba(255,255,255,.025) 1px,
+      transparent 1px
+    ),
+
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,.025) 1px,
+      transparent 1px
+    );
+
+  background-size:30px 30px;
+
+}
+
+
+#svgContainer{
+
+  width:100%;
+  height:100%;
+
+  position:relative;
+
+}
+
+
+#buildingSvg{
+
+  width:100%;
+  height:100%;
+
+  display:block;
+
+  cursor:grab;
+
+  user-select:none;
+
+}
+
+
+#buildingSvg.dragging{
+
+  cursor:grabbing;
+
+}
+
+
+/*
+ * Curseur pendant la rotation.
+ */
+
+#buildingSvg.rotating{
+
+  cursor:crosshair;
+
+}
+
+
+
+/* ============================================================
+   EDITEUR DE SALLES
+   ============================================================ */
+.editorTabs{
+  display:flex;
+  gap:6px;
+  margin:14px 0 12px;
+}
+.editorTab{
+  flex:1;
+  padding:9px 8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--panel2);
+  color:var(--muted);
+  cursor:pointer;
+  font-size:12px;
+}
+.editorTab.active{
+  color:var(--text);
+  border-color:#3b82f6;
+  background:#10213a;
+}
+#editorPanel{
+  display:none;
+  margin-top:8px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--panel2);
+}
+#editorPanel.open{ display:block; }
+.editorTitle{
+  font-size:13px;
+  font-weight:600;
+  color:var(--text);
+  margin-bottom:9px;
+}
+.editorHint{
+  font-size:11px;
+  line-height:1.45;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+.editorField{
+  width:100%;
+  box-sizing:border-box;
+  margin:5px 0;
+  padding:8px 9px;
+  border-radius:7px;
+  border:1px solid var(--line);
+  background:#0b1828;
+  color:var(--text);
+  outline:none;
+}
+.editorField:focus{ border-color:#3b82f6; }
+.editorRow{ display:flex; gap:7px; margin-top:7px; }
+.editorRow button{ flex:1; }
+.editorDanger{ border-color:#7f1d1d !important; color:#fecaca !important; }
+#editorStatus{
+  margin-top:9px;
+  font-size:11px;
+  line-height:1.4;
+  color:var(--muted);
+}
+#buildingSvg.editor-add-mode{ cursor:crosshair !important; }
+#editorPolygonPreview{
+  pointer-events:none;
+  fill:rgba(37,99,235,.22);
+  stroke:#60a5fa;
+  stroke-width:2;
+  stroke-dasharray:5 4;
+  vector-effect:non-scaling-stroke;
+}
+#editorPointPreview{
+  pointer-events:none;
+  fill:#60a5fa;
+  stroke:#dbeafe;
+  stroke-width:1.5;
+  vector-effect:non-scaling-stroke;
+}
+
+#editorPreview{
+  pointer-events:none;
+  fill:rgba(37,99,235,.35);
+  stroke:#60a5fa;
+  stroke-width:1.5;
+  stroke-dasharray:5 4;
+  vector-effect:non-scaling-stroke;
+}
+
+/* ============================================================
+   SALLES
+   ============================================================ */
+
+/*
+ * Les salles restent une couche légère au-dessus du plan.
+ * Le rendu principal (murs/portes/fenêtres) vient du SVG exporté.
+ */
+.ifc-space{
+  fill:rgba(38,62,87,.16);
+  fill-opacity:.16;
+  stroke:rgba(87,125,163,.88);
+  stroke-width:1.5;
+  vector-effect:non-scaling-stroke;
+  transition:fill .15s, stroke .15s, filter .15s;
+  cursor:pointer;
+}
+
+.ifc-space:hover{
+  fill:rgba(77,163,255,.14);
+  fill-opacity:.14;
+  stroke:#4da3ff;
+  filter:drop-shadow(0 0 4px rgba(77,163,255,.45));
+}
+
+/* Les couches IFC doivent toujours rester visibles. */
+#wallGroup,
+#doorGroup,
+#windowGroup,
+#labelGroup{
+  display:inline !important;
+  visibility:visible !important;
+}
+
+/* Renforce légèrement la lisibilité sans remplacer les styles du SVG. */
+.ifc-wall{
+  fill:none;
+  stroke:var(--wall);
+  stroke-width:5;
+  stroke-linecap:round;
+  vector-effect:non-scaling-stroke;
+  visibility:visible;
+}
+
+.ifc-door{
+  fill:none;
+  stroke:var(--door);
+  stroke-width:5;
+  stroke-linecap:round;
+  vector-effect:non-scaling-stroke;
+  visibility:visible;
+}
+
+.ifc-window{
+  fill:none;
+  stroke:var(--window);
+  stroke-width:5;
+  stroke-linecap:round;
+  vector-effect:non-scaling-stroke;
+  visibility:visible;
+}
+
+#labelGroup .ifc-space-label,
+#labelGroup .ifc-space-code,
+#labelGroup .ifc-label{
+  visibility:visible;
+}
+
+/* ============================================================
+   HEATMAP PAR SALLE
+   Les valeurs sont injectées plus tard via setRoomHeatmap().
+   ============================================================ */
+
+.ifc-space.heatmap-enabled{
+  transition:fill .18s, stroke .15s, opacity .18s;
+}
+
+.ifc-space.room-selected{
+  stroke:#ffffff;
+  stroke-width:3.5;
+}
+
+#roomInfo{
+  display:none;
+  margin:0 0 18px 0;
+  padding:11px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--panel2);
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+
+#roomInfo strong{
+  color:var(--text);
+}
+
+.ifc-space-point{
+
+  fill:#facc15;
+
+  stroke:#ffffff;
+
+  stroke-width:2;
+
+  vector-effect:non-scaling-stroke;
+
+}
+
+#labelGroup .ifc-space-label{
+
+  fill:#ffffff;
+
+  font-size:13px;
+
+  font-weight:600;
+
+  text-anchor:middle;
+
+  dominant-baseline:middle;
+
+  pointer-events:none;
+
+}
+
+#labelGroup .ifc-space-code{
+  fill:#b9d9ff;
+  font-size:10px;
+  font-weight:500;
+  text-anchor:middle;
+  dominant-baseline:middle;
+  pointer-events:none;
+}
+
+
+/* ============================================================
+   MURS
+   ============================================================ */
+
+.ifc-wall{
+
+  stroke:var(--wall);
+
+  stroke-width:5;
+
+  stroke-linecap:round;
+
+  vector-effect:non-scaling-stroke;
+
+}
+
+
+/* ============================================================
+   PORTES
+   ============================================================ */
+
+.ifc-door{
+
+  stroke:var(--door);
+
+  stroke-width:4;
+
+  stroke-linecap:round;
+
+  vector-effect:non-scaling-stroke;
+
+}
+
+.ifc-door-symbol{
+
+  fill:none;
+
+  stroke:var(--door);
+
+  stroke-width:2;
+
+  vector-effect:non-scaling-stroke;
+
+}
+
+
+/* ============================================================
+   FENETRES
+   ============================================================ */
+
+.ifc-window{
+
+  stroke:var(--window);
+
+  stroke-width:4;
+
+  stroke-linecap:round;
+
+  vector-effect:non-scaling-stroke;
+
+}
+
+.ifc-window-symbol{
+
+  fill:none;
+
+  stroke:var(--window);
+
+  stroke-width:3;
+
+  vector-effect:non-scaling-stroke;
+
+}
+
+
+/* ============================================================
+   LABELS
+   ============================================================ */
+
+#labelGroup .ifc-label{
+
+  fill:#9fb3c8;
+
+  font-size:12px;
+
+  pointer-events:none;
+
+}
+
+
+/* ============================================================
+   TITRE DU PLAN
+   ============================================================ */
+
+.title{
+
+  position:absolute;
+
+  left:24px;
+
+  bottom:22px;
+
+  font-size:13px;
+
+  color:var(--muted);
+
+  z-index:50;
+
+}
+
+
+/* ============================================================
+   LEGENDE
+   ============================================================ */
+
+.legend{
+
+  margin-top:22px;
+
+  border-top:
+    1px solid var(--line);
+
+  padding-top:15px;
+
+}
+
+
+.legendItem{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:8px;
+
+  font-size:12px;
+
+  color:var(--muted);
+
+  margin:8px 0;
+
+}
+
+
+.legendLine{
+
+  width:25px;
+
+  height:4px;
+
+  border-radius:5px;
+
+}
+
+.wallLegend{
+
+  background:var(--wall);
+
+}
+
+.doorLegend{
+
+  background:var(--door);
+
+}
+
+.windowLegend{
+
+  background:var(--window);
+
+}
+
+.spaceLegend{
+
+  width:20px;
+
+  height:12px;
+
+  border-radius:3px;
+
+  background:var(--space);
+
+  border:1px solid var(--space-border);
+
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media(max-width:800px){
+
+  .layout{
+
+    grid-template-columns:
+      210px
+      1fr;
+
+  }
+
+}
+
+
+/* Points de construction de salle */
+.room-draw-point{
+  fill:#ffffff;
+  stroke:#4da3ff;
+  stroke-width:2;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+
+.room-draw-preview{
+  fill:rgba(77,163,255,.10);
+  stroke:#4da3ff;
+  stroke-width:2;
+  stroke-dasharray:7 5;
+  vector-effect:non-scaling-stroke;
+  pointer-events:none;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="layout">
+
+
+<!-- ============================================================
+     PANNEAU GAUCHE
+     ============================================================ -->
+
+<aside>
+
+  <h3>Étage</h3>
+
+  <select id="floor"></select>
+
+  <div style="margin-top:10px;">
+    <button id="svgFileButton" type="button" class="controlButton">
+      Charger le SVG exporté
+    </button>
+    <input id="svgFileInput" type="file" accept=".svg,image/svg+xml" hidden>
+  </div>
+
+  <div id="floorInfo">
+    Chargement IFC...
+  </div>
+
+  <div id="roomInfo"></div>
+
+  <div class="editorTabs">
+    <button id="viewTab" type="button" class="editorTab active">Visualisation</button>
+    <button id="editTab" type="button" class="editorTab">Modifier les salles</button>
+  </div>
+
+  <section id="editorPanel">
+    <div class="editorTitle">Modification des salles</div>
+    <div class="editorHint">
+      Sélectionne une salle pour la supprimer. Pour en ajouter une, clique sur chaque sommet de la salle pour créer un polygone, puis double-clique sur le dernier point pour terminer. Renseigne ensuite le nom et le code.
+    </div>
+    <div class="editorRow">
+      <button id="deleteRoomBtn" type="button" class="editorDanger">Supprimer la salle sélectionnée</button>
+    </div>
+    <div class="editorRow">
+      <button id="addRoomBtn" type="button">Ajouter une salle</button>
+      <button id="cancelAddRoomBtn" type="button" hidden>Annuler</button>
+    </div>
+    <div id="newRoomFields" hidden>
+      <input id="newRoomCode" class="editorField" type="text" placeholder="Code de la salle">
+      <input id="newRoomName" class="editorField" type="text" placeholder="Nom de la salle">
+      <div class="editorRow">
+        <button id="confirmAddRoomBtn" type="button">Créer la salle</button>
+      </div>
+    </div>
+    <div class="editorRow">
+      <button id="undoRoomBtn" type="button" title="Ctrl+Z">↶ Annuler</button>
+      <button id="redoRoomBtn" type="button" title="Ctrl+Y">↷ Rétablir</button>
+    </div>
+    <div class="editorRow">
+      <button id="saveSvgBtn" type="button">Enregistrer le SVG</button>
+    </div>
+    <div id="editorStatus">Aucune modification.</div>
+  </section>
+
+
+  <h3>Vue</h3>
+
+  <button id="reset">
+    ↺ Réinitialiser la vue
+  </button>
+
+  <button id="zoomIn">
+    ＋ Zoom
+  </button>
+
+  <button id="zoomOut">
+    － Dézoom
+  </button>
+
+
+  <div class="legend">
+
+    <div class="legendItem">
+
+      <span class="legendLine spaceLegend"></span>
+
+      Salles
+
+    </div>
+
+
+    <div class="legendItem">
+
+      <span class="legendLine wallLegend"></span>
+
+      Murs IFC
+
+    </div>
+
+
+    <div class="legendItem">
+
+      <span class="legendLine doorLegend"></span>
+
+      Portes IFC
+
+    </div>
+
+
+    <div class="legendItem">
+
+      <span class="legendLine windowLegend"></span>
+
+      Fenêtres IFC
+
+    </div>
+
+  </div>
+
+</aside>
+
+
+<!-- ============================================================
+     VIEWER IFC
+     ============================================================ -->
+
+<main class="viewer">
+
+  <div id="plan">
+
+    <div id="svgContainer">
+
+      <svg
+        id="buildingSvg"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs id="svgDefs"></defs>
+        <g id="buildingGroup">
+          <g id="spaceGroup"></g>
+          <g id="heatmapGroup"></g>
+          <g id="editorPreviewGroup"></g>
+          <g id="externalSvgGroup"></g>
+          <g id="wallGroup"></g>
+          <g id="doorGroup"></g>
+          <g id="windowGroup"></g>
+          <g id="labelGroup"></g>
+        </g>
+      </svg>
+
+    </div>
+
+  </div>
+
+
+  <div
+    class="title"
+    id="floorTitle"
+  >
+    Chargement du plan IFC...
+  </div>
+
+
+</main>
+
+
+</div>
+
+
+<script>
+
+
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+
+const API =
+  "http://localhost:8000/api";
+
+// IMPORTANT : les géométries des salles viennent exclusivement de
+// ./<ETAGE>.svg, fichier produit par export_svg.py.
+// L'HTML ne recalcule plus les contours des salles.
+
+
+let floors = [];
+
+let currentFloorData = null;
+
+// Valeurs de heatmap par salle.
+// Clés acceptées : IFC id, code/Name ou nom de salle.
+let roomHeatmap = {};
+let selectedRoomId = null;
+
+
+/* ============================================================
+   DOM
+   ============================================================ */
+
+const floorSel =
+  document.getElementById("floor");
+
+const svg =
+  document.getElementById("buildingSvg");
+
+const svgDefs =
+  document.getElementById("svgDefs");
+
+const buildingGroup =
+  document.getElementById("buildingGroup");
+
+const spaceGroup =
+  document.getElementById("spaceGroup");
+
+const heatmapGroup =
+  document.getElementById("heatmapGroup");
+
+const wallGroup =
+  document.getElementById("wallGroup");
+
+const doorGroup =
+  document.getElementById("doorGroup");
+
+const windowGroup =
+  document.getElementById("windowGroup");
+
+const labelGroup =
+  document.getElementById("labelGroup");
+
+const svgFileButton = document.getElementById("svgFileButton");
+const svgFileInput = document.getElementById("svgFileInput");
+const editorPreviewGroup = document.getElementById("editorPreviewGroup");
+const externalSvgGroup = document.getElementById("externalSvgGroup");
+const viewTab = document.getElementById("viewTab");
+const editTab = document.getElementById("editTab");
+const editorPanel = document.getElementById("editorPanel");
+const deleteRoomBtn = document.getElementById("deleteRoomBtn");
+const addRoomBtn = document.getElementById("addRoomBtn");
+const cancelAddRoomBtn = document.getElementById("cancelAddRoomBtn");
+const confirmAddRoomBtn = document.getElementById("confirmAddRoomBtn");
+const newRoomFields = document.getElementById("newRoomFields");
+const newRoomCode = document.getElementById("newRoomCode");
+const newRoomName = document.getElementById("newRoomName");
+const saveSvgBtn = document.getElementById("saveSvgBtn");
+const undoRoomBtn = document.getElementById("undoRoomBtn");
+const redoRoomBtn = document.getElementById("redoRoomBtn");
+const editorStatus = document.getElementById("editorStatus");
+let manuallyLoadedSvg = null;
+
+// Permet de distinguer un SVG externe quelconque d’un SVG exporté par le projet.
+let currentSvgIsExternal = false;
+let editorAddMode = false;
+
+/* ============================================================
+   HISTORIQUE DE MODIFICATION DES SALLES
+   ============================================================ */
+
+const editorUndoStack = [];
+const editorRedoStack = [];
+const MAX_EDITOR_HISTORY = 100;
+
+function getEditableSnapshot(){
+  return {
+    spacesHtml: spaceGroup.innerHTML,
+    labelsHtml: labelGroup.innerHTML
+  };
+}
+
+function rebuildSpacesFromSvg(){
+  if(!currentFloorData) return;
+
+  const roomNodes = Array.from(
+    spaceGroup.querySelectorAll('.ifc-space[data-heatmap-target]')
+  );
+
+  const spaces = roomNodes.map(room => ({
+    id: room.getAttribute('data-space-id') || room.getAttribute('data-id') || '',
+    code: room.getAttribute('data-code') || room.getAttribute('data-room-code') || '',
+    name: room.getAttribute('data-code') || room.getAttribute('data-room-code') || '',
+    longName: room.getAttribute('data-room-name') || '',
+    roomName: room.getAttribute('data-room-name') || '',
+    area: Number(
+      room.getAttribute('data-area') ||
+      room.getAttribute('data-room-area')
+    ),
+    svgElement: room
+  }));
+
+  currentFloorData.spaces = spaces;
+}
+
+function updateHistoryButtons(){
+  undoRoomBtn.disabled = editorUndoStack.length === 0;
+  redoRoomBtn.disabled = editorRedoStack.length === 0;
+}
+
+function resetEditorHistory(){
+  editorUndoStack.length = 0;
+  editorRedoStack.length = 0;
+  updateHistoryButtons();
+}
+
+function pushEditorHistory(){
+  const snapshot = getEditableSnapshot();
+
+  editorUndoStack.push(snapshot);
+  if(editorUndoStack.length > MAX_EDITOR_HISTORY){
+    editorUndoStack.shift();
+  }
+
+  editorRedoStack.length = 0;
+  updateHistoryButtons();
+}
+
+function restoreEditorSnapshot(snapshot){
+  if(!snapshot) return;
+
+  spaceGroup.innerHTML = snapshot.spacesHtml || '';
+  labelGroup.innerHTML = snapshot.labelsHtml || '';
+
+  rebuildSpacesFromSvg();
+
+  selectedRoomId = null;
+  spaceGroup.querySelectorAll('.room-selected').forEach(room => {
+    room.classList.remove('room-selected');
+  });
+
+  applyRoomHeatmap();
+  clearRoomSelection();
+}
+
+function undoEditorChange(){
+  if(editorUndoStack.length === 0){
+    setEditorStatus('Aucune modification à annuler.');
+    return;
+  }
+
+  editorRedoStack.push(getEditableSnapshot());
+
+  const snapshot = editorUndoStack.pop();
+  restoreEditorSnapshot(snapshot);
+
+  editorDirty = true;
+  updateHistoryButtons();
+  setEditorStatus('Dernière modification annulée.');
+}
+
+function redoEditorChange(){
+  if(editorRedoStack.length === 0){
+    setEditorStatus('Aucune modification à rétablir.');
+    return;
+  }
+
+  editorUndoStack.push(getEditableSnapshot());
+
+  const snapshot = editorRedoStack.pop();
+  restoreEditorSnapshot(snapshot);
+
+  editorDirty = true;
+  updateHistoryButtons();
+  setEditorStatus('Modification rétablie.');
+}
+
+let editorDrawing = false;
+let editorStart = null;
+let editorRect = null;
+let editorDirty = false;
+
+
+/* ============================================================
+   VIEWBOX
+   ============================================================ */
+
+let viewBox = {
+
+  minX:0,
+
+  minY:0,
+
+  width:1000,
+
+  height:700
+
+};
+
+let initialViewBox = null;
+
+
+/*
+ * Angle actuel du bâtiment.
+ *
+ * 0 = position normale
+ * positif = rotation horaire
+ * négatif = rotation antihoraire
+ */
+
+let rotation = 0;
+
+
+/* ============================================================
+   COORDONNEES IFC -> SVG
+   ============================================================ */
+
+function normalizePoint(x, y){
+
+  const bounds =
+    currentFloorData.bounds;
+
+
+  return {
+
+    x:
+      Number(x) -
+      Number(bounds.min_x),
+
+
+    y:
+      Number(bounds.max_y) -
+      Number(y)
+
+  };
+
+}
+
+
+/* ============================================================
+   HEATMAP PAR SALLE
+   ============================================================ */
+
+function normalizeRoomKey(value){
+  if(value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+function getRoomHeatValue(space){
+  const keys = [
+    space.id,
+    space.code,
+    space.roomCode,
+    space.name,
+    space.Name,
+    space.longName,
+    space.long_name,
+    space.roomName
+  ];
+
+  for(const key of keys){
+    const normalized = normalizeRoomKey(key);
+    if(normalized && Object.prototype.hasOwnProperty.call(roomHeatmap, normalized)){
+      const value = Number(roomHeatmap[normalized]);
+      if(Number.isFinite(value)) return value;
+    }
+  }
+
+  return null;
+}
+
+function heatmapColor(value, min, max){
+  if(!Number.isFinite(value)) return null;
+  if(max <= min) return "rgba(77,163,255,.35)";
+
+  const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
+
+  // Bleu -> cyan -> jaune -> rouge.
+  const stops = [
+    [77,163,255],
+    [80,220,220],
+    [250,204,21],
+    [239,68,68]
+  ];
+
+  const scaled = t * (stops.length - 1);
+  const i = Math.min(stops.length - 2, Math.floor(scaled));
+  const local = scaled - i;
+  const a = stops[i];
+  const b = stops[i + 1];
+  const r = Math.round(a[0] + (b[0] - a[0]) * local);
+  const g = Math.round(a[1] + (b[1] - a[1]) * local);
+  const bl = Math.round(a[2] + (b[2] - a[2]) * local);
+
+  return `rgb(${r}, ${g}, ${bl})`;
+}
+
+function applyRoomHeatmap(){
+  const rooms = Array.from(
+    spaceGroup.querySelectorAll('.ifc-space[data-heatmap-target]')
+  );
+
+  const values = rooms
+    .map(room => getRoomHeatValueFromSvg(room))
+    .filter(Number.isFinite);
+
+  const min = values.length ? Math.min(...values) : 0;
+  const max = values.length ? Math.max(...values) : 1;
+
+  rooms.forEach(room => {
+    const value = getRoomHeatValueFromSvg(room);
+
+    room.classList.toggle('heatmap-enabled', values.length > 0);
+
+    if(Number.isFinite(value)){
+      room.style.fill = heatmapColor(value, min, max);
+      room.style.fillOpacity = '0.72';
+      room.dataset.heatValue = String(value);
+      room.dataset.heatNormalized = String(
+        max > min ? (value - min) / (max - min) : 0.5
+      );
+    } else {
+      room.style.fill = '';
+      room.style.fillOpacity = '';
+      delete room.dataset.heatValue;
+      delete room.dataset.heatNormalized;
+    }
+  });
+}
+
+function getRoomHeatValueFromSvg(room){
+  const keys = [
+    room.getAttribute('data-space-id'),
+    room.getAttribute('data-code'),
+    room.getAttribute('data-room-name')
+  ];
+
+  for(const key of keys){
+    const normalized = normalizeRoomKey(key);
+    if(
+      normalized &&
+      Object.prototype.hasOwnProperty.call(roomHeatmap, normalized)
+    ){
+      const value = Number(roomHeatmap[normalized]);
+      if(Number.isFinite(value)) return value;
+    }
+  }
+
+  return null;
+}
+
+/*
+ * API publique pour la future source de données (capteurs, CSV, API...).
+ * Exemple : setRoomHeatmap({"IfcSpace_123": 24.5, "B101": 31.2});
+ * Aucun calcul de géométrie n'est effectué ici : on colore uniquement
+ * les salles déjà dessinées par drawSpace().
+ */
+function setRoomHeatmap(values){
+  roomHeatmap = {};
+
+  if(values && typeof values === "object"){
+    Object.entries(values).forEach(([key, value]) => {
+      const number = Number(value);
+      if(Number.isFinite(number)){
+        roomHeatmap[normalizeRoomKey(key)] = number;
+      }
+    });
+  }
+
+  applyRoomHeatmap();
+}
+
+function clearRoomHeatmap(){
+  roomHeatmap = {};
+  applyRoomHeatmap();
+}
+
+// Accessible plus tard depuis une API externe / un script de capteurs.
+window.setRoomHeatmap = setRoomHeatmap;
+window.clearRoomHeatmap = clearRoomHeatmap;
+
+function showRoomInfo(space){
+  const box = document.getElementById("roomInfo");
+  if(!box) return;
+
+  const code = String(
+    space.code || space.roomCode || space.name || space.Name || "—"
+  ).trim();
+  const name = String(
+    space.longName || space.long_name || space.roomName || space.description || ""
+  ).trim();
+  const area = Number(space.area);
+  const heat = getRoomHeatValue(space);
+
+  box.innerHTML =
+    `<strong>${escapeHtml(name || code)}</strong><br>` +
+    `Code : ${escapeHtml(code)}<br>` +
+    (Number.isFinite(area) ? `Surface : ${area.toFixed(1)} m²<br>` : "") +
+    (heat !== null ? `Valeur heatmap : ${heat}` : "Heatmap : —");
+  box.style.display = "block";
+}
+
+function escapeHtml(value){
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function clearRoomSelection(){
+  selectedRoomId = null;
+  spaceGroup.querySelectorAll(".room-selected").forEach(
+    room => room.classList.remove("room-selected")
+  );
+  const box = document.getElementById("roomInfo");
+  if(box){
+    box.style.display = "none";
+    box.innerHTML = "";
+  }
+}
+
+/* ============================================================
+   CHARGEMENT DES ETAGES
+   ============================================================ */
+
+async function loadFloors(){
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/floors"
+      );
+
+
+    if(!response.ok){
+
+      throw new Error(
+        "HTTP " +
+        response.status
+      );
+
+    }
+
+
+    const json =
+      await response.json();
+
+
+    floors =
+      (json.floors || []).filter(
+        floor =>
+          floor.name !== "T1" &&
+          floor.name !== "Acrotère"
+      );
+
+
+    floorSel.innerHTML =
+      "";
+
+
+    floors.forEach(
+      floor => {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+
+        option.value =
+          floor.name;
+
+
+        option.textContent =
+          floor.name;
+
+
+        floorSel.appendChild(
+          option
+        );
+
+      }
+    );
+
+
+    if(floors.length === 0){
+
+      throw new Error(
+        "Aucun étage IFC trouvé."
+      );
+
+    }
+
+
+    /*
+     * On commence par N1
+     * si cet étage existe.
+     */
+
+    const n1 =
+      floors.find(
+        floor =>
+          floor.name === "N1"
+      );
+
+
+    floorSel.value =
+      n1
+        ? "N1"
+        : floors[0].name;
+
+
+    await loadFloor();
+
+  }
+
+  catch(error){
+
+    console.error(
+      error
+    );
+
+
+    document.getElementById(
+      "floorInfo"
+    ).textContent =
+      "Erreur : " +
+      error.message;
+
+  }
+
+}
+
+
+/* ============================================================
+   CHARGEMENT D'UN ETAGE
+   ============================================================ */
+
+async function loadFloor(){
+  const floorName = floorSel.value;
+  if(!floorName) return;
+
+  try{
+    document.getElementById('floorInfo').textContent =
+      'Chargement du SVG exporté...';
+    document.getElementById('floorTitle').textContent =
+      'Chargement du plan SVG...';
+
+    // Source de vérité : le SVG produit par export_svg.py.
+    // Aucun contour de salle n'est recalculé ici.
+    let svgText = null;
+
+    // Si l'utilisateur vient de sélectionner un SVG local, on l'utilise.
+    let loadedSvgIsExternal = false;
+
+    if(manuallyLoadedSvg && manuallyLoadedSvg.floorName === floorName){
+      svgText = manuallyLoadedSvg.text;
+      loadedSvgIsExternal = !!manuallyLoadedSvg.external;
+      manuallyLoadedSvg = null;
+    }
+
+    // Sinon, on tente les emplacements classiques. Attention : le main.py
+    // fourni ne sert pas les fichiers SVG ; ils doivent donc être servis
+    // par le serveur qui sert la page.
+    if(svgText === null){
+      const candidates = [
+        // Structure du projet : frontend/index.html -> ../exports/N1.svg
+        // Le backend FastAPI expose le dossier projet/exports via /exports
+        `/exports/${encodeURIComponent(floorName)}.svg`,
+        // Fallback pour un frontend servi séparément (ex. Live Server)
+        `http://127.0.0.1:8000/exports/${encodeURIComponent(floorName)}.svg`,
+        `../exports/${encodeURIComponent(floorName)}.svg`,
+        `./exports/${encodeURIComponent(floorName)}.svg`
+      ];
+      let lastError = null;
+
+      for(const url of candidates){
+        try{
+          const response = await fetch(url, { cache: 'no-store' });
+          if(!response.ok) throw new Error(`HTTP ${response.status}`);
+          const candidateText = await response.text();
+          if(candidateText.includes('<svg')){
+            svgText = candidateText;
+            break;
+          }
+          lastError = new Error('le fichier ne contient pas de balise SVG');
+        }catch(error){
+          lastError = error;
+        }
+      }
+
+      if(svgText === null){
+        throw new Error(
+          `Impossible de charger ${floorName}.svg. ` +
+          `Vérifie que le fichier existe dans le dossier exports/ et qu’il est servi par le serveur web. ` +
+          (lastError ? ` Dernière erreur : ${lastError.message}` : '')
+        );
+      }
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, 'image/svg+xml');
+    const sourceSvg = doc.documentElement;
+
+    if(!sourceSvg || sourceSvg.nodeName.toLowerCase() !== 'svg'){
+      throw new Error(`${floorName}.svg n'est pas un document SVG valide`);
+    }
+
+    // Un SVG importé manuellement peut être totalement indépendant du projet.
+    // Les SVG du projet gardent leur traitement historique ; les SVG externes
+    // sont placés dans externalSvgGroup sans perdre leurs balises arbitraires.
+    loadedSvgIsExternal = loadedSvgIsExternal ||
+      sourceSvg.getAttribute('data-heatmap-ready') !== 'true';
+    currentSvgIsExternal = loadedSvgIsExternal;
+
+    const viewBoxAttr = sourceSvg.getAttribute('viewBox') || getSvgViewBoxFromSize(sourceSvg);
+    if(viewBoxAttr) svg.setAttribute('viewBox', viewBoxAttr);
+    svg.setAttribute('width', sourceSvg.getAttribute('width') || '100%');
+    svg.setAttribute('height', sourceSvg.getAttribute('height') || '100%');
+    svg.setAttribute('preserveAspectRatio', sourceSvg.getAttribute('preserveAspectRatio') || 'xMidYMid meet');
+    svg.setAttribute('data-floor-id', sourceSvg.getAttribute('data-floor-id') || '');
+    svg.setAttribute('data-floor-name', sourceSvg.getAttribute('data-floor-name') || floorName);
+    svg.setAttribute('data-heatmap-ready', 'true');
+    svg.setAttribute('data-external-svg', loadedSvgIsExternal ? 'true' : 'false');
+
+    const sourceDefs = sourceSvg.querySelector(':scope > defs');
+    svgDefs.innerHTML = sourceDefs ? sourceDefs.innerHTML : '';
+
+    // IMPORTANT : export_svg.py place aussi une balise <style> directement
+    // sous la racine <svg>. On la recopie dans <defs> afin de conserver
+    // exactement le rendu des murs, portes, fenêtres, salles et labels.
+    sourceSvg.querySelectorAll(':scope > style').forEach(sourceStyle => {
+      const clonedStyle = sourceStyle.cloneNode(true);
+      clonedStyle.setAttribute('data-source-svg-style', 'true');
+      svgDefs.appendChild(clonedStyle);
+    });
+
+    const copyGroup = (id, target) => {
+      const source = sourceSvg.querySelector(`#${id}`);
+      target.innerHTML = source ? source.innerHTML : '';
+    };
+
+    // Toujours repartir d’un état propre.
+    spaceGroup.innerHTML = '';
+    heatmapGroup.innerHTML = '';
+    wallGroup.innerHTML = '';
+    doorGroup.innerHTML = '';
+    windowGroup.innerHTML = '';
+    labelGroup.innerHTML = '';
+    editorPreviewGroup.innerHTML = '';
+    externalSvgGroup.innerHTML = '';
+
+    if(loadedSvgIsExternal){
+      // Copie tout le contenu du SVG externe, pas seulement les groupes connus.
+      // Les defs/styles restent dans svgDefs pour conserver les références CSS.
+      Array.from(sourceSvg.children).forEach(child => {
+        const tag = child.tagName.toLowerCase();
+        if(tag === 'defs' || tag === 'style') return;
+        if(tag === 'script') return; // ne jamais exécuter de script provenant d’un SVG importé
+        externalSvgGroup.appendChild(child.cloneNode(true));
+      });
+    }else{
+      copyGroup('spaceGroup', spaceGroup);
+      copyGroup('heatmapGroup', heatmapGroup);
+      copyGroup('wallGroup', wallGroup);
+      copyGroup('doorGroup', doorGroup);
+      copyGroup('windowGroup', windowGroup);
+      copyGroup('labelGroup', labelGroup);
+    }
+
+    // ------------------------------------------------------------
+    // Nettoyage des zones :
+    // - on retire UNIQUEMENT les espaces suspects ;
+    // - toutes les autres salles restent exactement comme dans le SVG exporté.
+    // - murs, portes, fenêtres et inscriptions sont conservés.
+    // ------------------------------------------------------------
+    spaceGroup.querySelectorAll('.ifc-space').forEach(room => {
+      const suspected = String(room.getAttribute('data-suspected-container') || '').toLowerCase() === 'true';
+
+      if(suspected){
+        room.remove();
+      }
+    });
+
+    // Ne pas vider les autres groupes : ils proviennent du SVG exporté
+    // et doivent rester visibles (murs, portes, fenêtres, labels).
+
+    // Reconstruction UNIQUEMENT des métadonnées de sélection/heatmap.
+    // La géométrie reste intégralement celle du SVG exporté.
+    const roomNodes = loadedSvgIsExternal ? [] : Array.from(
+      spaceGroup.querySelectorAll('.ifc-space[data-heatmap-target]')
+    );
+
+    const spaces = roomNodes.map(room => ({
+      id: room.getAttribute('data-space-id') || '',
+      code: room.getAttribute('data-code') || '',
+      name: room.getAttribute('data-code') || '',
+      longName: room.getAttribute('data-room-name') || '',
+      roomName: room.getAttribute('data-room-name') || '',
+      area: Number(room.getAttribute('data-area')),
+      svgElement: room
+    }));
+
+    // Associe les inscriptions du SVG aux salles lorsque le texte correspond au code/nom.
+    labelGroup.querySelectorAll('text').forEach(label => {
+      const text = String(label.textContent || '').replace(/\s+/g, ' ').trim();
+      if(!text) return;
+      const match = spaces.find(space => {
+        const code = String(space.code || '').replace(/\s+/g, ' ').trim();
+        const name = String(space.longName || '').replace(/\s+/g, ' ').trim();
+        return text === code || text === name;
+      });
+      if(match) label.setAttribute('data-room-id', match.id);
+    });
+
+    const parsedBounds = parseViewBox(viewBoxAttr);
+
+    // Les SVG externes peuvent avoir des tailles de texte incompatibles
+    // avec leur échelle. On normalise les noms/codes de salles après copie.
+    if(loadedSvgIsExternal){
+      normalizeExternalSvgText(externalSvgGroup, parsedBounds);
+    }
+
+    currentFloorData = {
+      floor: {
+        name: floorName,
+        id: sourceSvg.getAttribute('data-floor-id') || ''
+      },
+      spaces,
+      bounds: parsedBounds
+    };
+
+    viewBox = {
+      minX: parsedBounds.min_x,
+      minY: parsedBounds.min_y,
+      width: parsedBounds.width,
+      height: parsedBounds.height
+    };
+    initialViewBox = { ...viewBox };
+    rotation = 0;
+    updateViewBox();
+    clearRoomSelection();
+    applyRoomHeatmap();
+
+    const count = roomNodes.length;
+    document.getElementById('floorInfo').textContent = loadedSvgIsExternal
+      ? `SVG externe chargé · ${floorName}`
+      : `SVG exporté chargé · ${count} salle${count > 1 ? 's' : ''} indépendante${count > 1 ? 's' : ''}`;
+    document.getElementById('floorTitle').textContent = loadedSvgIsExternal
+      ? `${floorName} · SVG externe`
+      : `${floorName} · SVG exporté par export_svg.py`;
+
+    resetEditorHistory();
+    console.log('[SVG] étage chargé :', floorName, 'salles :', count);
+  }
+  catch(error){
+    console.error('Erreur SVG :', error);
+    document.getElementById('floorInfo').textContent =
+      'Erreur : ' + error.message;
+    document.getElementById('floorTitle').textContent =
+      'Impossible de charger le SVG exporté';
+    clearIFC();
+  }
+}
+
+function getSvgViewBoxFromSize(sourceSvg){
+  const width = parseFloat(sourceSvg.getAttribute('width'));
+  const height = parseFloat(sourceSvg.getAttribute('height'));
+  if(Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0){
+    return `0 0 ${width} ${height}`;
+  }
+  return '0 0 1000 700';
+}
+
+/* ============================================================
+   NORMALISATION DES TEXTES D'UN SVG EXTERNE
+   ============================================================
+   Les SVG provenant d'autres logiciels peuvent utiliser des tailles
+   de texte très différentes (px, pt, unités du dessin, etc.).
+   On ramène donc les textes de salle à une taille proportionnelle
+   au viewBox. Cela évite qu'un nom/code devienne gigantesque.
+*/
+function normalizeExternalSvgText(root, parsedBounds){
+  if(!root || !parsedBounds) return;
+
+  const reference = Math.min(
+    Math.abs(parsedBounds.width),
+    Math.abs(parsedBounds.height)
+  );
+
+  if(!Number.isFinite(reference) || reference <= 0) return;
+
+  // Taille volontairement petite et proportionnelle au dessin.
+  // IMPORTANT : on ne met surtout pas de minimum en pixels/unités SVG.
+  // Un SVG externe peut avoir un viewBox très petit (ex. 100 x 70) :
+  // un minimum de 8 unités rendrait alors le texte gigantesque.
+  // Nom : environ 0,35 % de la petite dimension du plan.
+  // Code : environ 0,25 %.
+  const defaultNameSize = reference * 0.0035;
+  const defaultCodeSize = reference * 0.0025;
+  const defaultNameStroke = Math.max(defaultNameSize * 0.12, reference * 0.00025);
+  const defaultCodeStroke = Math.max(defaultCodeSize * 0.12, reference * 0.00018);
+
+  root.querySelectorAll('text').forEach(textNode => {
+    const className = String(textNode.getAttribute('class') || '').toLowerCase();
+    const id = String(textNode.getAttribute('id') || '').toLowerCase();
+    const dataName = String(textNode.getAttribute('data-room-name') || '').toLowerCase();
+    const dataCode = String(textNode.getAttribute('data-code') || textNode.getAttribute('data-room-code') || '').toLowerCase();
+    const context = `${className} ${id} ${dataName} ${dataCode}`;
+
+    const isCode = /(^|[-_ ]|\b)(code|room-code|roomcode|space-code)([-_ ]|\b)/.test(context);
+    const isRoomLabel = /room|room-name|roomname|space|label|salle|ifc-space/.test(context);
+
+    // Si le SVG identifie clairement le code ou le nom de salle,
+    // on lui applique la taille correspondante.
+    // Pour les autres textes, on ne touche pas au texte du SVG original.
+    if(isCode){
+      textNode.style.setProperty('font-size', `${defaultCodeSize}px`, 'important');
+      textNode.style.setProperty('stroke-width', `${defaultCodeStroke}px`, 'important');
+    }else if(isRoomLabel){
+      textNode.style.setProperty('font-size', `${defaultNameSize}px`, 'important');
+      textNode.style.setProperty('stroke-width', `${defaultNameStroke}px`, 'important');
+    }
+  });
+}
+
+function parseViewBox(value){
+  const parts = String(value || '').trim().split(/[ ,]+/).map(Number);
+  if(parts.length === 4 && parts.every(Number.isFinite)){
+    return {
+      min_x: parts[0],
+      min_y: parts[1],
+      width: parts[2],
+      height: parts[3],
+      max_x: parts[0] + parts[2],
+      max_y: parts[1] + parts[3]
+    };
+  }
+  return { min_x: 0, min_y: 0, width: 1000, height: 700, max_x: 1000, max_y: 700 };
+}
+
+/* ============================================================
+   NETTOYAGE
+   ============================================================ */
+
+function clearIFC(){
+
+  spaceGroup.innerHTML =
+    "";
+
+  heatmapGroup.innerHTML =
+    "";
+
+  wallGroup.innerHTML =
+    "";
+
+  doorGroup.innerHTML =
+    "";
+
+  windowGroup.innerHTML =
+    "";
+
+  labelGroup.innerHTML =
+    "";
+
+  externalSvgGroup.innerHTML =
+    "";
+
+  svgDefs.innerHTML =
+    "";
+
+}
+
+
+/* ============================================================
+   DRAW IFC
+   ============================================================ */
+
+function drawIFC(){
+
+  if(
+    !currentFloorData ||
+    !currentFloorData.bounds
+  ){
+
+    console.error(
+      "Pas de données IFC."
+    );
+
+    return;
+
+  }
+
+
+  clearIFC();
+
+
+  const elements =
+    currentFloorData.elements || [];
+
+
+  const spaces =
+    currentFloorData.spaces || [];
+
+
+  let walls = 0;
+
+  let doors = 0;
+
+  let windows = 0;
+
+
+  /* ==========================================================
+     SALLES
+     ========================================================== */
+
+  spaces.forEach(
+    space => {
+
+      drawSpace(space);
+
+    }
+  );
+
+
+  /* ==========================================================
+     ELEMENTS IFC
+     ========================================================== */
+
+  elements.forEach(
+    element => {
+
+      if(
+        element.type === "wall"
+      ){
+
+        drawElement(
+          element,
+          wallGroup,
+          "ifc-wall"
+        );
+
+        walls++;
+
+      }
+
+
+      else if(
+        element.type === "door"
+      ){
+
+        drawElement(
+          element,
+          doorGroup,
+          "ifc-door"
+        );
+
+        doors++;
+
+      }
+
+
+      else if(
+        element.type === "window"
+      ){
+
+        drawElement(
+          element,
+          windowGroup,
+          "ifc-window"
+        );
+
+        windows++;
+
+      }
+
+    }
+  );
+
+
+  console.log(
+    "========== IFC =========="
+  );
+
+
+  console.log(
+    "Etage :",
+    currentFloorData.floor.name
+  );
+
+
+  console.log(
+    "Éléments :",
+    elements.length
+  );
+
+
+  console.log(
+    "Salles :",
+    spaces.length
+  );
+
+
+  console.log(
+    "Murs :",
+    walls
+  );
+
+
+  console.log(
+    "Portes :",
+    doors
+  );
+
+
+  console.log(
+    "Fenêtres :",
+    windows
+  );
+
+  applyRoomHeatmap();
+}
+
+
+/* ============================================================
+   DRAW SPACE
+   ============================================================ */
+
+function drawSpace(space){
+
+  let points = [];
+
+
+  /*
+   * Priorité aux vrais points
+   * fournis par le backend.
+   */
+
+  if(
+    space.points &&
+    space.points.length >= 3
+  ){
+
+    points =
+      space.points.map(
+        point => {
+
+          return normalizePoint(
+            point.x,
+            point.y
+          );
+
+        }
+      );
+
+  }
+
+
+  /*
+   * Sinon utilisation des lignes.
+   */
+
+  else if(
+    space.lines &&
+    space.lines.length >= 3
+  ){
+
+    points =
+      space.lines.map(
+        line => {
+
+          return normalizePoint(
+            line.x1,
+            line.y1
+          );
+
+        }
+      );
+
+  }
+
+
+  /*
+   * Si aucune géométrie de salle
+   * n'est disponible.
+   */
+
+  if(points.length < 3){
+
+    if(space.position){
+
+      const p =
+        normalizePoint(
+          space.position.x,
+          space.position.y
+        );
+
+
+      const circle =
+        document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "circle"
+        );
+
+
+      circle.setAttribute(
+        "cx",
+        p.x
+      );
+
+
+      circle.setAttribute(
+        "cy",
+        p.y
+      );
+
+
+      circle.setAttribute(
+        "r",
+        Math.max(
+          8,
+          Math.min(
+            viewBox.width,
+            viewBox.height
+          ) * .003
+        )
+      );
+
+
+      circle.setAttribute(
+        "class",
+        "ifc-space-point"
+      );
+
+
+      spaceGroup.appendChild(
+        circle
+      );
+
+
+      drawSpaceLabel(space, p.x, p.y);
+
+    }
+
+    return;
+
+  }
+
+
+  /*
+   * Polygon de la salle.
+   */
+
+  const polygon =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "polygon"
+    );
+
+
+  polygon.setAttribute(
+    "points",
+
+    points
+      .map(
+        p =>
+          `${p.x},${p.y}`
+      )
+      .join(" ")
+  );
+
+
+  polygon.setAttribute(
+    "class",
+    "ifc-space"
+  );
+
+
+  polygon.setAttribute(
+    "data-id",
+    space.id || ""
+  );
+
+  // Identifiants stables pour la future heatmap salle par salle.
+  polygon.setAttribute("data-room-id", space.id || "");
+  polygon.setAttribute("data-room-code", space.code || space.roomCode || space.name || space.Name || "");
+  polygon.setAttribute("data-room-name", space.longName || space.long_name || space.roomName || space.description || "");
+  if(Number.isFinite(Number(space.area))){
+    polygon.setAttribute("data-room-area", Number(space.area));
+  }
+
+  const heatValue = getRoomHeatValue(space);
+  if(heatValue !== null){
+    polygon.dataset.heatValue = String(heatValue);
+  }
+
+
+  if(space.name){
+
+    polygon.setAttribute(
+      "title",
+      space.name
+    );
+
+  }
+
+
+  spaceGroup.appendChild(
+    polygon
+  );
+
+
+  /*
+   * Label au centre.
+   */
+
+  const center =
+    polygonCenter(points);
+
+
+  if(center){
+
+    drawSpaceLabel(space, center.x, center.y);
+
+  }
+
+}
+
+
+
+/* ============================================================
+   EDITEUR DE SALLES
+   ============================================================ */
+
+function setEditorStatus(message){
+  editorStatus.textContent = message;
+}
+
+function setEditorOpen(open){
+  editorPanel.classList.toggle('open', open);
+  viewTab.classList.toggle('active', !open);
+  editTab.classList.toggle('active', open);
+  if(!open) stopAddRoomMode();
+}
+
+function getSvgPointFromClient(clientX, clientY){
+  /*
+   * Conversion EXACTE écran -> coordonnées SVG.
+   *
+   * On ne calcule volontairement PAS la position avec getBoundingClientRect()
+   * + viewBox : preserveAspectRatio, zoom, déplacement et transformations
+   * peuvent créer des marges/offsets.
+   *
+   * getScreenCTM() donne directement la transformation réellement appliquée
+   * au SVG affiché. Le point est donc posé exactement sous le curseur.
+   */
+  const ctm = svg.getScreenCTM();
+  if(!ctm) return null;
+
+  const point = svg.createSVGPoint();
+  point.x = clientX;
+  point.y = clientY;
+
+  const svgPoint = point.matrixTransform(ctm.inverse());
+
+  return {
+    x: svgPoint.x,
+    y: svgPoint.y
+  };
+}
+
+function stopAddRoomMode(){
+  editorAddMode = false;
+  editorDrawing = false;
+  editorPoints = [];
+  editorCursorPoint = null;
+  editorPolygonReady = false;
+  svg.classList.remove('editor-add-mode');
+  editorPreviewGroup.innerHTML = '';
+  addRoomBtn.hidden = false;
+  cancelAddRoomBtn.hidden = true;
+  newRoomFields.hidden = true;
+}
+
+function startAddRoomMode(){
+  if(!currentFloorData){
+    setEditorStatus('Charge d’abord un étage.');
+    return;
+  }
+
+  // Le dessin suit directement le viewBox courant. On neutralise seulement
+  // la rotation pour que les clics soient cohérents avec le plan.
+  rotation = 0;
+  updateViewBox();
+
+  editorAddMode = true;
+  editorDrawing = true;
+  editorPoints = [];
+  editorCursorPoint = null;
+  editorPolygonReady = false;
+  editorPreviewGroup.innerHTML = '';
+  svg.classList.add('editor-add-mode');
+  addRoomBtn.hidden = true;
+  cancelAddRoomBtn.hidden = false;
+  newRoomFields.hidden = true;
+  setEditorStatus('Clique sur chaque sommet de la salle. Double-clique sur le dernier point pour terminer le polygone.');
+}
+
+function makeEditorPoint(x, y){
+  return {x: Number(x), y: Number(y)};
+}
+
+function polygonArea(points){
+  if(!points || points.length < 3) return 0;
+  let sum = 0;
+  for(let i = 0; i < points.length; i++){
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(sum) / 2;
+}
+
+function updateEditorPolygonPreview(cursorPoint = null){
+  editorPreviewGroup.innerHTML = '';
+  if(editorPoints.length === 0) return;
+
+  const displayPoints = editorPoints.slice();
+  if(cursorPoint) displayPoints.push(cursorPoint);
+  if(displayPoints.length < 2) return;
+
+  const ns = 'http://www.w3.org/2000/svg';
+
+  if(displayPoints.length >= 3){
+    const polygon = document.createElementNS(ns, 'polygon');
+    polygon.setAttribute('id', 'editorPolygonPreview');
+    polygon.setAttribute('points', displayPoints.map(p => `${p.x},${p.y}`).join(' '));
+    editorPreviewGroup.appendChild(polygon);
+  } else {
+    const line = document.createElementNS(ns, 'polyline');
+    line.setAttribute('id', 'editorPolygonPreview');
+    line.setAttribute('points', displayPoints.map(p => `${p.x},${p.y}`).join(' '));
+    line.setAttribute('fill', 'none');
+    editorPreviewGroup.appendChild(line);
+  }
+
+  editorPoints.forEach((p) => {
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('id', 'editorPointPreview');
+    circle.setAttribute('cx', p.x);
+    circle.setAttribute('cy', p.y);
+    circle.setAttribute('r', Math.max(4, Math.min(viewBox.width, viewBox.height) * 0.006));
+    editorPreviewGroup.appendChild(circle);
+  });
+}
+
+function finishEditorPolygon(){
+  editorCursorPoint = null;
+
+  // Un double-clic déclenche deux événements click juste avant dblclick.
+  // On retire donc un éventuel doublon créé au même endroit.
+  if(editorPoints.length >= 2){
+    const a = editorPoints[editorPoints.length - 1];
+    const b = editorPoints[editorPoints.length - 2];
+    const tolerance = Math.max(viewBox.width, viewBox.height) * 0.002;
+    if(Math.hypot(a.x - b.x, a.y - b.y) <= tolerance){
+      editorPoints.pop();
+    }
+  }
+
+  editorDrawing = false;
+
+  if(editorPoints.length < 3){
+    updateEditorPolygonPreview();
+    setEditorStatus('Il faut au moins 3 points pour créer une salle.');
+    return;
+  }
+
+  editorPolygonReady = true;
+  updateEditorPolygonPreview();
+  newRoomFields.hidden = false;
+  setEditorStatus(`Polygone terminé : ${editorPoints.length} points. Renseigne le nom et le code puis clique sur « Créer la salle ».`);
+  newRoomCode.focus();
+}
+
+function cancelEditorPolygon(){
+  stopAddRoomMode();
+  setEditorStatus('Ajout annulé.');
+}
+
+function removeRoomLabels(room){
+  const roomId = String(room.getAttribute('data-space-id') || '');
+  const code = String(room.getAttribute('data-code') || room.getAttribute('data-room-code') || '').trim();
+  const name = String(room.getAttribute('data-room-name') || '').trim();
+  labelGroup.querySelectorAll('text').forEach(label => {
+    const labelId = String(label.getAttribute('data-room-id') || '');
+    const text = String(label.textContent || '').replace(/\s+/g, ' ').trim();
+    if((roomId && labelId === roomId) || (code && text === code) || (name && text === name)){
+      label.remove();
+    }
+  });
+}
+
+function deleteSelectedRoom(){
+  const room = spaceGroup.querySelector('.ifc-space.room-selected');
+  if(!room){
+    setEditorStatus('Sélectionne une salle sur le plan avant de la supprimer.');
+    return;
+  }
+  const code = room.getAttribute('data-code') || room.getAttribute('data-room-code') || '';
+  const name = room.getAttribute('data-room-name') || '';
+  pushEditorHistory();
+  removeRoomLabels(room);
+  room.remove();
+  selectedRoomId = null;
+  if(currentFloorData && Array.isArray(currentFloorData.spaces)){
+    currentFloorData.spaces = currentFloorData.spaces.filter(space =>
+      String(space.id || '') !== String(room.getAttribute('data-space-id') || '')
+    );
+  }
+  editorDirty = true;
+  clearRoomSelection();
+  setEditorStatus(`Salle supprimée : ${name || code || 'sans nom'}.`);
+}
+
+function getSvgPoint(event){
+  // IMPORTANT : convertir les coordonnées écran en coordonnées du viewBox.
+  // Ainsi, le point posé correspond exactement au pixel cliqué,
+  // même avec zoom, déplacement, rotation ou redimensionnement du SVG.
+  const pt = svg.createSVGPoint();
+  pt.x = event.clientX;
+  pt.y = event.clientY;
+
+  const ctm = svg.getScreenCTM();
+  if(!ctm){
+    return {x: 0, y: 0};
+  }
+
+  const svgPoint = pt.matrixTransform(ctm.inverse());
+
+  return {
+    x: svgPoint.x,
+    y: svgPoint.y
+  };
+}
+
+
+function clearDrawPreview(){
+  document.getElementById('roomDrawPreview')?.remove();
+  document.querySelectorAll('.room-draw-point').forEach(el => el.remove());
+}
+
+function drawConstructionPoint(x, y){
+  let g = document.getElementById('roomDrawPoints');
+  if(!g){
+    g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.id = 'roomDrawPoints';
+    g.setAttribute('pointer-events','none');
+    svg.appendChild(g);
+  }
+
+  const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('class','room-draw-point');
+  c.setAttribute('cx', x);
+  c.setAttribute('cy', y);
+  c.setAttribute('r', 4);
+  g.appendChild(c);
+}
+
+function updateDrawPreview(points, currentPoint){
+  let preview = document.getElementById('roomDrawPreview');
+
+  if(!preview){
+    preview = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    preview.id = 'roomDrawPreview';
+    preview.setAttribute('class','room-draw-preview');
+    svg.appendChild(preview);
+  }
+
+  const all = currentPoint ? [...points, currentPoint] : points;
+  preview.setAttribute(
+    'points',
+    all.map(p => `${p.x},${p.y}`).join(' ')
+  );
+}
+
+function getRoomPointsBounds(points){
+  if(!Array.isArray(points) || !points.length) return null;
+  const xs = points.map(p => Number(p.x)).filter(Number.isFinite);
+  const ys = points.map(p => Number(p.y)).filter(Number.isFinite);
+  if(!xs.length || !ys.length) return null;
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys),
+    width: Math.max(0.001, Math.max(...xs) - Math.min(...xs)),
+    height: Math.max(0.001, Math.max(...ys) - Math.min(...ys)),
+    centerX: (Math.min(...xs) + Math.max(...xs)) / 2,
+    centerY: (Math.min(...ys) + Math.max(...ys)) / 2
+  };
+}
+
+/*
+ * Les noms/codes des salles AJOUTÉES doivent toujours rester dans
+ * la salle. On ne se contente pas d'une taille fixe : on mesure le
+ * texte réel dans le SVG et on réduit sa police jusqu'à ce que sa
+ * largeur et sa hauteur tiennent dans la boîte de la salle.
+ */
+function fitRoomLabelsInsideRoom(labels, points){
+  const list = (labels || []).filter(Boolean);
+  const bounds = getRoomPointsBounds(points);
+  if(!list.length || !bounds) return;
+
+  const maxWidth = bounds.width * 0.82;
+  const maxHeight = bounds.height * 0.58;
+  const nameLabel = list[0];
+  const codeLabel = list.length > 1 ? list[1] : null;
+
+  // Taille de départ proportionnelle à la salle, jamais à l'écran.
+  let nameSize = Math.min(13, bounds.width * 0.075, bounds.height * (codeLabel ? 0.16 : 0.24));
+  let codeSize = Math.min(10, bounds.width * 0.055, bounds.height * 0.13);
+  nameSize = Math.max(0.05, nameSize);
+  codeSize = Math.max(0.04, codeSize);
+
+  const apply = () => {
+    if(nameLabel) nameLabel.style.fontSize = `${nameSize}px`;
+    if(codeLabel) codeLabel.style.fontSize = `${codeSize}px`;
+
+    if(codeLabel){
+      const gap = Math.max(nameSize, codeSize) * 0.72;
+      nameLabel.setAttribute('x', bounds.centerX);
+      codeLabel.setAttribute('x', bounds.centerX);
+      nameLabel.setAttribute('y', bounds.centerY - gap);
+      codeLabel.setAttribute('y', bounds.centerY + gap);
+    }else if(nameLabel){
+      nameLabel.setAttribute('x', bounds.centerX);
+      nameLabel.setAttribute('y', bounds.centerY);
+    }
+  };
+
+  // Plusieurs passes : getBBox() donne la taille réelle du texte SVG.
+  for(let i = 0; i < 12; i++){
+    apply();
+
+    let widest = 0;
+    let top = Infinity;
+    let bottom = -Infinity;
+    for(const label of list){
+      try{
+        const box = label.getBBox();
+        widest = Math.max(widest, box.width);
+        top = Math.min(top, box.y);
+        bottom = Math.max(bottom, box.y + box.height);
+      }catch(_){
+        // Le navigateur peut ne pas encore exposer getBBox juste après insertion.
+      }
+    }
+
+    const totalHeight = bottom > top ? bottom - top : 0;
+    const widthRatio = widest > maxWidth ? maxWidth / widest : 1;
+    const heightRatio = totalHeight > maxHeight ? maxHeight / totalHeight : 1;
+    const ratio = Math.min(widthRatio, heightRatio, 1);
+
+    if(ratio >= 0.995) break;
+    nameSize *= ratio * 0.96;
+    codeSize *= ratio * 0.96;
+    if(nameSize < 0.05) nameSize = 0.05;
+    if(codeSize < 0.04) codeSize = 0.04;
+  }
+
+  apply();
+}
+
+function createAddedRoom(){
+  if(!editorPolygonReady || editorPoints.length < 3){
+    setEditorStatus('Termine d’abord le polygone avec au moins 3 points.');
+    return;
+  }
+
+  const code = String(newRoomCode.value || '').trim();
+  const name = String(newRoomName.value || '').trim();
+  if(!code || !name){
+    setEditorStatus('Le code et le nom sont obligatoires.');
+    return;
+  }
+
+  pushEditorHistory();
+
+  const id = `EDIT-${Date.now()}`;
+  const ns = 'http://www.w3.org/2000/svg';
+  const polygon = document.createElementNS(ns, 'polygon');
+  polygon.setAttribute('class', 'ifc-space');
+  polygon.setAttribute('points', editorPoints.map(p => `${p.x},${p.y}`).join(' '));
+  polygon.setAttribute('data-space-id', id);
+  polygon.setAttribute('data-code', code);
+  polygon.setAttribute('data-room-code', code);
+  polygon.setAttribute('data-room-name', name);
+  polygon.setAttribute('data-selectable', 'true');
+  polygon.setAttribute('data-heatmap-target', 'true');
+  polygon.setAttribute('data-suspected-container', 'false');
+  polygon.setAttribute('data-room-area', String(polygonArea(editorPoints)));
+  polygon.setAttribute('data-room-points', JSON.stringify(editorPoints));
+  polygon.setAttribute('title', `${name} · ${code}`);
+  spaceGroup.appendChild(polygon);
+
+  const center = polygonCenter(editorPoints);
+  const centerX = center ? center.x : editorPoints.reduce((s,p) => s + p.x, 0) / editorPoints.length;
+  const centerY = center ? center.y : editorPoints.reduce((s,p) => s + p.y, 0) / editorPoints.length;
+
+  const labelName = document.createElementNS(ns, 'text');
+  labelName.setAttribute('x', centerX);
+  labelName.setAttribute('y', centerY - 7);
+  labelName.setAttribute('text-anchor', 'middle');
+  labelName.setAttribute('class', 'ifc-space-label');
+  labelName.setAttribute('data-room-id', id);
+  labelName.textContent = name;
+  labelGroup.appendChild(labelName);
+
+  const labelCode = document.createElementNS(ns, 'text');
+  labelCode.setAttribute('x', centerX);
+  labelCode.setAttribute('y', centerY + 8);
+  labelCode.setAttribute('text-anchor', 'middle');
+  labelCode.setAttribute('class', 'ifc-space-code');
+  labelCode.setAttribute('data-room-id', id);
+  labelCode.textContent = code;
+  labelGroup.appendChild(labelCode);
+
+  // Ajuste automatiquement le nom + code à la taille réelle du polygone.
+  fitRoomLabelsInsideRoom([labelName, labelCode], editorPoints);
+
+  const roomData = {
+    id, code, name: code, longName: name, roomName: name,
+    area: polygonArea(editorPoints), points: editorPoints.slice(), svgElement: polygon
+  };
+  if(!currentFloorData) currentFloorData = {spaces: []};
+  if(!Array.isArray(currentFloorData.spaces)) currentFloorData.spaces = [];
+  currentFloorData.spaces.push(roomData);
+
+  polygon.classList.add('room-selected');
+  selectedRoomId = id;
+  editorDirty = true;
+  stopAddRoomMode();
+  newRoomCode.value = '';
+  newRoomName.value = '';
+  setEditorStatus(`Salle ajoutée : ${name} · ${code}.`);
+}
+
+function saveEditedSvg(){
+  if(!currentFloorData || !svg.getAttribute('data-heatmap-ready')){
+    setEditorStatus('Aucun SVG chargé.');
+    return;
+  }
+  stopAddRoomMode();
+  editorPreviewGroup.innerHTML = '';
+  // Le fichier sauvegardé doit rester autonome : styles essentiels embarqués.
+  const clone = svg.cloneNode(true);
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+  const defs = clone.querySelector('defs') ||
+    clone.insertBefore(
+      document.createElementNS('http://www.w3.org/2000/svg','defs'),
+      clone.firstChild
+    );
+
+  // Les styles du SVG original sont déjà conservés dans <defs>.
+  // Aucun nouveau style de salle n'est injecté ici.
+// On n’exporte pas l’état de zoom/rotation de l’interface.
+const vb = initialViewBox || viewBox;
+clone.setAttribute(
+  'viewBox',
+  `${vb.minX} ${vb.minY} ${vb.width} ${vb.height}`
+);
+
+const cloneBuilding = clone.querySelector('#buildingGroup');
+
+if (cloneBuilding) {
+  const centerX = vb.minX + vb.width / 2;
+  const centerY = vb.minY + vb.height / 2;
+
+  cloneBuilding.setAttribute(
+    'transform',
+    `rotate(${rotation} ${centerX} ${centerY})`
+  );
+}
+
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(clone);
+  const floorName = floorSel.value || 'etage';
+  const blob = new Blob([xml], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${floorName}_modifie.svg`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  editorDirty = false;
+  setEditorStatus(`SVG enregistré : ${floorName}_modifie.svg`);
+}
+
+viewTab.addEventListener('click', () => setEditorOpen(false));
+editTab.addEventListener('click', () => setEditorOpen(true));
+deleteRoomBtn.addEventListener('click', deleteSelectedRoom);
+addRoomBtn.addEventListener('click', startAddRoomMode);
+cancelAddRoomBtn.addEventListener('click', cancelEditorPolygon);
+confirmAddRoomBtn.addEventListener('click', createAddedRoom);
+saveSvgBtn.addEventListener('click', saveEditedSvg);
+undoRoomBtn.addEventListener('click', undoEditorChange);
+redoRoomBtn.addEventListener('click', redoEditorChange);
+
+document.addEventListener('keydown', event => {
+  const isModifier = event.ctrlKey || event.metaKey;
+  if(!isModifier) return;
+
+  const tag = String(event.target?.tagName || '').toLowerCase();
+  const isTyping =
+    tag === 'input' ||
+    tag === 'textarea' ||
+    event.target?.isContentEditable;
+
+  // Laisse le navigateur gérer l'annulation native dans les champs texte.
+  if(isTyping) return;
+
+  const key = String(event.key || '').toLowerCase();
+
+  if(key === 'z' && !event.shiftKey){
+    event.preventDefault();
+    undoEditorChange();
+    return;
+  }
+
+  if(
+    key === 'y' ||
+    (key === 'z' && event.shiftKey)
+  ){
+    event.preventDefault();
+    redoEditorChange();
+  }
+});
+
+updateHistoryButtons();
+
+document.addEventListener('keydown', event => {
+  if(!editorAddMode) return;
+  if(event.key === 'Escape'){
+    event.preventDefault();
+    cancelEditorPolygon();
+  } else if(event.key === 'Enter' && editorDrawing){
+    event.preventDefault();
+    finishEditorPolygon();
+  }
+});
+
+svg.addEventListener('click', event => {
+  if(!editorAddMode || !editorDrawing) return;
+  event.preventDefault();
+  event.stopPropagation();
+
+  const p = getSvgPointFromClient(event.clientX, event.clientY);
+  if(!p) return;
+
+  // Le point est stocké exactement dans le même système de coordonnées
+  // que le SVG, donc il sera rendu exactement à l'endroit du clic.
+  editorPoints.push(makeEditorPoint(p.x, p.y));
+  editorCursorPoint = null;
+  updateEditorPolygonPreview();
+  setEditorStatus(`${editorPoints.length} point${editorPoints.length > 1 ? 's' : ''} sélectionné${editorPoints.length > 1 ? 's' : ''}. Double-clique sur le dernier point pour terminer.`);
+}, true);
+
+svg.addEventListener('dblclick', event => {
+  if(!editorAddMode || !editorDrawing) return;
+  event.preventDefault();
+  event.stopPropagation();
+  finishEditorPolygon();
+}, true);
+
+svg.addEventListener('mousemove', event => {
+  if(!editorAddMode || !editorDrawing) return;
+  const p = getSvgPointFromClient(event.clientX, event.clientY);
+  if(!p) return;
+  editorCursorPoint = p;
+  updateEditorPolygonPreview(editorCursorPoint);
+});
+
+svg.addEventListener('contextmenu', event => {
+  if(!editorAddMode) return;
+  event.preventDefault();
+  finishEditorPolygon();
+});
+
+
+
+/* ============================================================
+   INTERACTION SALLE
+   ============================================================ */
+
+spaceGroup.addEventListener("click", event => {
+  if(editorAddMode){
+    event.stopPropagation();
+    return;
+  }
+  const room = event.target.closest(".ifc-space");
+  if(!room) return;
+
+  event.stopPropagation();
+
+  spaceGroup.querySelectorAll(".room-selected").forEach(
+    item => item.classList.remove("room-selected")
+  );
+  room.classList.add("room-selected");
+  selectedRoomId = room.dataset.roomId || room.dataset.roomCode || null;
+
+  const space = (currentFloorData?.spaces || []).find(item =>
+    String(item.id || "") === String(room.dataset.roomId || "") ||
+    String(item.code || item.roomCode || item.name || item.Name || "") === String(room.dataset.roomCode || "")
+  );
+
+  if(space){
+    showRoomInfo(space);
+  }
+});
+
+svg.addEventListener("click", event => {
+  if(editorAddMode) return;
+  if(event.target.closest(".ifc-space")) return;
+  clearRoomSelection();
+});
+
+/* ============================================================
+   LABEL SALLE
+   ============================================================ */
+
+function drawSpaceLabel(space, x, y){
+
+  // Le backend actuel transmet space.name (qui correspond
+  // au code IFC). Les champs name/longName/description/code
+  // sont également pris en charge s'ils sont fournis par l'API.
+  // Normalise les valeurs IFC : ignore les champs vides et
+  // réduit les espaces/retours à la ligne parasites.
+  const cleanText = (...values) => {
+    for(const value of values){
+      if(value === null || value === undefined) continue;
+      const text = String(value).replace(/\s+/g, " ").trim();
+      if(text) return text;
+    }
+    return "";
+  };
+
+  // Dans le modèle IFC du projet, Name est le code et LongName
+  // est le nom lisible de la salle. Les alias restent acceptés.
+  const code = cleanText(
+    space.code, space.roomCode, space.name, space.Name
+  );
+
+  const roomName = cleanText(
+    space.longName, space.long_name, space.roomName,
+    space.description, space.LongName
+  );
+
+  const createdLabels = [];
+  const makeText = (content, className, yOffset) => {
+    if(!content) return null;
+    const text = document.createElementNS(
+      "http://www.w3.org/2000/svg", "text"
+    );
+    text.setAttribute("x", x);
+    text.setAttribute("y", y + yOffset);
+    text.setAttribute("class", className);
+    if(space.id) text.setAttribute("data-room-id", space.id);
+    text.textContent = content;
+    labelGroup.appendChild(text);
+    createdLabels.push(text);
+    return text;
+  };
+
+  // Nom de salle sur la première ligne, code sur la seconde.
+  // Si seul le code est disponible, il reste visible comme avant.
+  if(roomName && code && roomName !== code){
+    makeText(roomName, "ifc-space-label", -7);
+    makeText(code, "ifc-space-code", 8);
+  } else {
+    makeText(roomName || code || "Salle", "ifc-space-label", 0);
+  }
+
+  // Si la géométrie de la salle est disponible, le texte est lui aussi
+  // contraint à l'intérieur de cette géométrie.
+  if(Array.isArray(space.points) && space.points.length >= 3){
+    fitRoomLabelsInsideRoom(createdLabels, space.points);
+  }
+}
+
+
+/* ============================================================
+   CENTRE POLYGONE
+   ============================================================ */
+
+function polygonCenter(points){
+
+  if(
+    !points ||
+    points.length === 0
+  ){
+
+    return null;
+
+  }
+
+
+  let x = 0;
+
+  let y = 0;
+
+
+  points.forEach(
+    point => {
+
+      x += point.x;
+
+      y += point.y;
+
+    }
+  );
+
+
+  return {
+
+    x:
+      x / points.length,
+
+    y:
+      y / points.length
+
+  };
+
+}
+
+
+/* ============================================================
+   DRAW ELEMENT
+   ============================================================ */
+
+function drawElement(
+  element,
+  group,
+  className
+){
+
+  /*
+   * ----------------------------------------------------------
+   * VRAIES LIGNES IFC
+   * ----------------------------------------------------------
+   */
+
+  if(
+    element.lines &&
+    element.lines.length > 0
+  ){
+
+    element.lines.forEach(
+      line => {
+
+        const p1 =
+          normalizePoint(
+            line.x1,
+            line.y1
+          );
+
+
+        const p2 =
+          normalizePoint(
+            line.x2,
+            line.y2
+          );
+
+
+        const svgLine =
+          document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "line"
+          );
+
+
+        svgLine.setAttribute(
+          "x1",
+          p1.x
+        );
+
+
+        svgLine.setAttribute(
+          "y1",
+          p1.y
+        );
+
+
+        svgLine.setAttribute(
+          "x2",
+          p2.x
+        );
+
+
+        svgLine.setAttribute(
+          "y2",
+          p2.y
+        );
+
+
+        svgLine.setAttribute(
+          "class",
+          className
+        );
+
+
+        svgLine.setAttribute(
+          "data-id",
+          element.id || ""
+        );
+
+
+        if(element.name){
+
+          svgLine.setAttribute(
+            "title",
+            element.name
+          );
+
+        }
+
+
+        group.appendChild(
+          svgLine
+        );
+
+      }
+    );
+
+
+    return;
+
+  }
+
+
+  /*
+   * ----------------------------------------------------------
+   * ELEMENTES SANS LIGNE
+   * ----------------------------------------------------------
+   */
+
+  if(!element.position){
+
+    return;
+
+  }
+
+
+  const p =
+    normalizePoint(
+      element.position.x,
+      element.position.y
+    );
+
+
+  if(
+    element.type === "door"
+  ){
+
+    drawDoorSymbol(
+      element,
+      group,
+      p.x,
+      p.y
+    );
+
+  }
+
+
+  else if(
+    element.type === "window"
+  ){
+
+    drawWindowSymbol(
+      element,
+      group,
+      p.x,
+      p.y
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   PORTE SANS GEOMETRIE
+   ============================================================ */
+
+function drawDoorSymbol(
+  element,
+  group,
+  x,
+  y
+){
+
+  const width =
+    Number(
+      element.width || 900
+    );
+
+
+  const line =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "line"
+    );
+
+
+  line.setAttribute(
+    "x1",
+    x - width / 2
+  );
+
+
+  line.setAttribute(
+    "y1",
+    y
+  );
+
+
+  line.setAttribute(
+    "x2",
+    x + width / 2
+  );
+
+
+  line.setAttribute(
+    "y2",
+    y
+  );
+
+
+  line.setAttribute(
+    "class",
+    "ifc-door"
+  );
+
+
+  line.setAttribute(
+    "data-id",
+    element.id || ""
+  );
+
+
+  group.appendChild(
+    line
+  );
+
+}
+
+
+/* ============================================================
+   FENETRE SANS GEOMETRIE
+   ============================================================ */
+
+function drawWindowSymbol(
+  element,
+  group,
+  x,
+  y
+){
+
+  const width =
+    Number(
+      element.width || 1200
+    );
+
+
+  const offset =
+    25;
+
+
+  const line1 =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "line"
+    );
+
+
+  const line2 =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "line"
+    );
+
+
+  line1.setAttribute(
+    "x1",
+    x - width / 2
+  );
+
+
+  line1.setAttribute(
+    "y1",
+    y - offset
+  );
+
+
+  line1.setAttribute(
+    "x2",
+    x + width / 2
+  );
+
+
+  line1.setAttribute(
+    "y2",
+    y - offset
+  );
+
+
+  line2.setAttribute(
+    "x1",
+    x - width / 2
+  );
+
+
+  line2.setAttribute(
+    "y1",
+    y + offset
+  );
+
+
+  line2.setAttribute(
+    "x2",
+    x + width / 2
+  );
+
+
+  line2.setAttribute(
+    "y2",
+    y + offset
+  );
+
+
+  line1.setAttribute(
+    "class",
+    "ifc-window"
+  );
+
+
+  line2.setAttribute(
+    "class",
+    "ifc-window"
+  );
+
+
+  group.appendChild(
+    line1
+  );
+
+
+  group.appendChild(
+    line2
+  );
+
+}
+
+
+/* ============================================================
+   VIEWBOX + ROTATION
+   ============================================================ */
+
+function updateViewBox(){
+
+  svg.setAttribute(
+    "viewBox",
+
+    `${viewBox.minX} ` +
+    `${viewBox.minY} ` +
+    `${viewBox.width} ` +
+    `${viewBox.height}`
+  );
+
+
+  /*
+   * Centre actuel du plan.
+   *
+   * Le bâtiment tourne autour
+   * du centre de la vue.
+   */
+
+  const centerX =
+    viewBox.minX +
+    viewBox.width / 2;
+
+
+  const centerY =
+    viewBox.minY +
+    viewBox.height / 2;
+
+
+  buildingGroup.setAttribute(
+    "transform",
+
+    `rotate(${rotation} ${centerX} ${centerY})`
+
+  );
+
+}
+
+
+/* ============================================================
+   ZOOM
+   ============================================================ */
+
+function zoom(
+  factor
+){
+
+  const centerX =
+    viewBox.minX +
+    viewBox.width / 2;
+
+
+  const centerY =
+    viewBox.minY +
+    viewBox.height / 2;
+
+
+  viewBox.width *=
+    factor;
+
+
+  viewBox.height *=
+    factor;
+
+
+  viewBox.minX =
+    centerX -
+    viewBox.width / 2;
+
+
+  viewBox.minY =
+    centerY -
+    viewBox.height / 2;
+
+
+  updateViewBox();
+
+}
+
+
+/* ============================================================
+   BOUTON ZOOM
+   ============================================================ */
+
+document.getElementById(
+  "zoomIn"
+).onclick =
+  () => {
+
+    zoom(.8);
+
+  };
+
+
+document.getElementById(
+  "zoomOut"
+).onclick =
+  () => {
+
+    zoom(1.25);
+
+  };
+
+
+/* ============================================================
+   RESET
+   ============================================================ */
+
+function resetView(){
+
+  if(!initialViewBox){
+
+    return;
+
+  }
+
+
+  viewBox =
+    {...initialViewBox};
+
+
+  /*
+   * Remise à zéro de la rotation.
+   */
+
+  rotation = 0;
+
+
+  updateViewBox();
+
+}
+
+
+document.getElementById(
+  "reset"
+).onclick =
+  resetView;
+
+
+/* ============================================================
+   DEPLACEMENT DU PLAN
+   CLIC GAUCHE + DEPLACEMENT
+   ============================================================ */
+
+let dragging = false;
+
+
+let dragStart = {
+
+  x:0,
+
+  y:0
+
+};
+
+
+let dragViewBox = null;
+
+
+svg.addEventListener(
+  "mousedown",
+  event => {
+
+    /*
+     * Le clic gauche sert au déplacement.
+     */
+
+    if(event.button !== 0 || editorAddMode){
+
+      return;
+
+    }
+
+
+    dragging = true;
+
+
+    svg.classList.add(
+      "dragging"
+    );
+
+
+    dragStart = {
+
+      x:event.clientX,
+
+      y:event.clientY
+
+    };
+
+
+    dragViewBox =
+      {...viewBox};
+
+  }
+);
+
+
+/* ============================================================
+   ROTATION DU PLAN
+   CLIC DROIT + DEPLACEMENT
+   ============================================================ */
+
+let rotating = false;
+
+
+let rotationStartX = 0;
+
+
+let rotationStartAngle = 0;
+
+
+/*
+ * Empêche le menu contextuel
+ * du navigateur.
+ */
+
+svg.addEventListener(
+  "contextmenu",
+  event => {
+
+    event.preventDefault();
+
+  }
+);
+
+
+/*
+ * Début de la rotation.
+ */
+
+svg.addEventListener(
+  "mousedown",
+  event => {
+
+    if(event.button !== 2 || editorAddMode){
+
+      return;
+
+    }
+
+
+    event.preventDefault();
+
+
+    rotating = true;
+
+
+    rotationStartX =
+      event.clientX;
+
+
+    rotationStartAngle =
+      rotation;
+
+
+    svg.classList.add(
+      "rotating"
+    );
+
+  }
+);
+
+
+/*
+ * Arrêt du déplacement / rotation.
+ */
+
+window.addEventListener(
+  "mouseup",
+  event => {
+
+    if(event.button === 0){
+
+      dragging = false;
+
+      svg.classList.remove(
+        "dragging"
+      );
+
+    }
+
+
+    if(event.button === 2){
+
+      rotating = false;
+
+      svg.classList.remove(
+        "rotating"
+      );
+
+    }
+
+  }
+);
+
+
+/*
+ * Déplacement + rotation.
+ */
+
+window.addEventListener(
+  "mousemove",
+  event => {
+
+    /*
+     * --------------------------------------------------------
+     * DEPLACEMENT
+     * --------------------------------------------------------
+     */
+
+    if(dragging && !editorAddMode){
+
+      const rect =
+        svg.getBoundingClientRect();
+
+
+      const dx =
+        (
+          event.clientX -
+          dragStart.x
+        )
+        /
+        rect.width
+        *
+        dragViewBox.width;
+
+
+      const dy =
+        (
+          event.clientY -
+          dragStart.y
+        )
+        /
+        rect.height
+        *
+        dragViewBox.height;
+
+
+      viewBox.minX =
+        dragViewBox.minX -
+        dx;
+
+
+      viewBox.minY =
+        dragViewBox.minY -
+        dy;
+
+
+      updateViewBox();
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * ROTATION
+     * --------------------------------------------------------
+     */
+
+    if(rotating){
+
+      const dx =
+        event.clientX -
+        rotationStartX;
+
+
+      /*
+       * Vitesse de rotation.
+       *
+       * 0.5 degré par pixel.
+       */
+
+      rotation =
+        rotationStartAngle +
+        dx * 0.5;
+
+
+      updateViewBox();
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   MOLETTE SOURIS
+   ============================================================ */
+
+svg.addEventListener(
+  "wheel",
+  event => {
+
+    event.preventDefault();
+
+
+    if(event.deltaY < 0){
+
+      zoom(.9);
+
+    }
+
+    else{
+
+      zoom(1.1);
+
+    }
+
+  },
+  {
+    passive:false
+  }
+);
+
+
+/* ============================================================
+   CHANGEMENT D'ETAGE
+   ============================================================ */
+
+floorSel.onchange =
+  loadFloor;
+
+
+/* ============================================================
+   CHARGEMENT MANUEL D'UN SVG EXPORTÉ
+   ============================================================ */
+
+svgFileButton.addEventListener("click", () => {
+  svgFileInput.value = "";
+  svgFileInput.click();
+});
+
+svgFileInput.addEventListener("change", async event => {
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+
+  try{
+    const text = await file.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "image/svg+xml");
+    const sourceSvg = doc.documentElement;
+    if(!sourceSvg || sourceSvg.nodeName.toLowerCase() !== "svg"){
+      throw new Error("Le fichier sélectionné n'est pas un SVG valide.");
+    }
+
+    const floorName = sourceSvg.getAttribute("data-floor-name") || file.name.replace(/\.svg$/i, "");
+    const isExternal = sourceSvg.getAttribute("data-heatmap-ready") !== "true";
+
+    manuallyLoadedSvg = { floorName, text, external: isExternal };
+
+    // Si ce nom n'existe pas dans la liste des étages IFC, on crée une option
+    // temporaire pour que le sélecteur puisse afficher le SVG externe.
+    const existingOption = Array.from(floorSel.options).find(
+      option => option.value === floorName
+    );
+    if(!existingOption){
+      const option = document.createElement('option');
+      option.value = floorName;
+      option.textContent = `${floorName} · SVG externe`;
+      floorSel.appendChild(option);
+    }
+
+    floorSel.value = floorName;
+    await loadFloor();
+    document.getElementById("floorInfo").textContent =
+      `${floorName} · SVG externe chargé : ${file.name}`;
+  }catch(error){
+    console.error(error);
+    document.getElementById("floorInfo").textContent =
+      `Erreur SVG : ${error.message}`;
+  }
+});
+
+
+/* ============================================================
+   DEMARRAGE
+   ============================================================ */
+
+loadFloors();
+
+/*
+ * FUTURE HEATMAP DATA
+ * -------------------
+ * Une fois les données disponibles, il suffira de faire :
+ *
+ *   setRoomHeatmap({
+ *     "ID_IFC_DE_LA_SALLE": 18.4,
+ *     "CODE_SALLE": 27.1
+ *   });
+ * Les salles restent celles de la visualisation actuelle.
+ */
+
+</script>
+
+</body>
+
+</html>
