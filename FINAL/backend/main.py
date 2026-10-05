@@ -319,3 +319,95 @@ def get_calibration(floor: str):
             "offset_y": 0.0
         }
     )
+
+# ============================================================
+# ANOMALIES - MONGODB LOCAL
+# ============================================================
+# MongoDB n'est jamais contacté par le navigateur directement.
+# FastAPI sert d'intermédiaire. Configuration :
+#   MONGO_URI=mongodb://localhost:27017
+#   MONGO_DB=campus
+#   MONGO_COLLECTION=anomalies
+#
+# Le schéma des documents reste volontairement souple :
+# les recherches utilisent room_id / space_id / ifc_id / code /
+# room_code / name / room_name et retournent le document tel quel.
+@app.get("/api/anomalies")
+def anomalies(
+    floor: str | None = None,
+    room_id: str | None = None,
+    code: str | None = None,
+    name: str | None = None,
+):
+    import os
+    from bson import ObjectId
+    from pymongo import MongoClient
+
+    mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    mongo_db = os.getenv("MONGO_DB", "campus")
+    mongo_collection = os.getenv("MONGO_COLLECTION", "anomalies")
+
+    try:
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=1500)
+        client.admin.command("ping")
+        collection = client[mongo_db][mongo_collection]
+
+        identifiers = [value.strip() for value in (room_id, code, name) if value and value.strip()]
+        query = {}
+
+        if identifiers:
+            query["$or"] = []
+            for value in identifiers:
+                query["$or"].extend([
+                    {"room_id": value},
+                    {"space_id": value},
+                    {"ifc_id": value},
+                    {"code": value},
+                    {"room_code": value},
+                    {"name": value},
+                    {"room_name": value},
+                ])
+
+        if floor:
+            query["$and"] = query.get("$and", []) + [
+                {"$or": [
+                    {"floor": floor},
+                    {"storey": floor},
+                    {"level": floor},
+                ]}
+            ]
+
+        documents = list(collection.find(query).limit(50))
+
+        def json_safe(value):
+            if isinstance(value, ObjectId):
+                return str(value)
+            if isinstance(value, dict):
+                return {str(k): json_safe(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [json_safe(v) for v in value]
+            return value
+
+        return {
+            "ok": True,
+            "source": "mongodb",
+            "database": mongo_db,
+            "collection": mongo_collection,
+            "count": len(documents),
+            "anomalies": [json_safe(doc) for doc in documents],
+        }
+
+    except Exception as error:
+        return {
+            "ok": False,
+            "source": "mongodb",
+            "count": 0,
+            "anomalies": [],
+            "error": str(error),
+            "hint": "Vérifie MONGO_URI, MONGO_DB, MONGO_COLLECTION et que MongoDB est démarré."
+        }
+    finally:
+        try:
+            client.close()
+        except Exception:
+            pass
