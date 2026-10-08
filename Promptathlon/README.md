@@ -26,7 +26,7 @@ Copier `.env.example` vers `.env.local`, puis renseigner les valeurs réelles :
 
 ### Configuration du bucket privé
 
-Le bucket doit rester privé, sans accès anonyme en lecture. Configurez une règle CORS autorisant l'origine exacte du site à effectuer des requêtes `PUT` avec l'en-tête `Content-Type`. N'autorisez pas `*` en production. Les clés d'accès doivent être limitées au bucket utilisé par l'application. Les URL d'envoi expirent après 5 minutes et les URL de téléchargement après 60 secondes.
+Le bucket doit rester privé, sans accès anonyme en lecture. Les clés d'accès doivent être limitées au bucket utilisé par l'application. Les fichiers sont contrôlés par le serveur avant leur envoi au bucket. Les URL de téléchargement expirent après 60 secondes.
 
 Les fichiers acceptés sont les PDF de 5 Mo maximum. Le contrôle de taille est réalisé dans l'interface et à nouveau par le serveur après téléversement. Les objets orphelins (téléversés mais jamais associés à une demande) doivent être supprimés par une règle de cycle de vie du fournisseur, par exemple après 24 heures.
 
