@@ -29,15 +29,17 @@ export function isAllowedDocumentType(value: string): value is AllowedDocumentTy
   return (ALLOWED_DOCUMENT_TYPES as readonly string[]).includes(value);
 }
 
-export async function createPressCardUpload() {
+export async function storePressCard(file: Buffer) {
   const { bucket, client } = storageConfig();
   const key = `press-cards/${randomUUID()}`;
-  const uploadUrl = await getSignedUrl(client, new PutObjectCommand({
+  await client.send(new PutObjectCommand({
     Bucket: bucket,
     Key: key,
+    Body: file,
+    ContentLength: file.byteLength,
     ContentType: "application/pdf",
-  }), { expiresIn: 300 });
-  return { key, uploadUrl, expiresIn: 300 };
+  }));
+  return key;
 }
 
 export async function verifyPressCardObject(key: string) {
