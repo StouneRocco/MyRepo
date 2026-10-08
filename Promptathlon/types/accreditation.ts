@@ -1,0 +1,1 @@
+export type ProfileType="JOURNALIST"|"PHOTOGRAPHER"|"VIDEOGRAPHER"; export type AccreditationStatus="PENDING"|"ACCEPTED"|"REJECTED";
