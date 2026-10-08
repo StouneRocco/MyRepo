@@ -7,6 +7,7 @@ Application Next.js (App Router), TypeScript, Tailwind CSS et MongoDB/Mongoose p
 - Pages publiques par sport, liste des matchs à venir et formulaire de demande.
 - Clôture des demandes à la date limite du match (par défaut 24 heures avant le coup d'envoi), contrôlée côté serveur.
 - Prévention des demandes en double (index MongoDB unique).
+- Limitation persistante des tentatives de connexion (10/15 min), des demandes publiques (10/15 min) et des téléversements (8/h), avec fenêtres en base MongoDB et purge TTL.
 - Carte de presse PDF téléversée directement dans un stockage privé compatible S3; taille maximale 5 Mo et type PDF contrôlés côté serveur.
 - Téléchargement de la carte de presse réservé à l'administration, via une URL signée de courte durée.
 - Administration protégée : consultation des demandes, filtrage par statut, création de matchs et acceptation/refus.
@@ -52,7 +53,7 @@ L'initialisation du premier compte administrateur doit être faite de façon con
 
 - Configurer les variables d'environnement MongoDB, JWT, Brevo et stockage privé.
 - Vérifier le domaine expéditeur Brevo et tester la délivrabilité.
-- Ajouter un rate limiting persistant aux endpoints publics et à la connexion.
+- Configurer le reverse proxy de façon à fournir un en-tête d’adresse IP client fiable, nécessaire au rate limiting.
 - Définir une politique de conservation/suppression des données personnelles et des cartes de presse, les sauvegardes MongoDB et les droits d'accès des administrateurs.
 - Tester le parcours complet sur un environnement de préproduction avec les services réels.
 - Vérifier les résultats du workflow GitHub Actions avant de fusionner.
