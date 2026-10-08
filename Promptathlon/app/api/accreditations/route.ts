@@ -3,15 +3,21 @@ import { connectDB } from "@/lib/mongodb";
 import { Match } from "@/models/Match";
 import { AccreditationRequest } from "@/models/AccreditationRequest";
 import { accreditationSchema } from "@/lib/validations";
+import { verifyPressCardObject } from "@/lib/private-storage";
 
 export async function POST(req: Request) {
   const parsed = accreditationSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ message: "Vérifiez les informations saisies." }, { status: 400 });
+    return NextResponse.json({ message: "Vérifiez les informations saisies, dont la carte de presse pour les journalistes." }, { status: 400 });
   }
 
   try {
     const body = parsed.data;
+    if (body.profileType === "JOURNALIST") {
+      if (!body.pressCardKey || !(await verifyPressCardObject(body.pressCardKey))) {
+        return NextResponse.json({ message: "La carte de presse est absente, invalide ou trop volumineuse. Téléversez un PDF de 5 Mo maximum." }, { status: 400 });
+      }
+    }
     await connectDB();
     const match = await Match.findById(body.matchId);
     if (!match) return NextResponse.json({ message: "Match introuvable." }, { status: 404 });
@@ -23,9 +29,9 @@ export async function POST(req: Request) {
 
     const request = await AccreditationRequest.create({
       ...body,
-      pressCardUrl: body.profileType === "JOURNALIST" ? body.pressCardUrl || undefined : undefined,
-      portfolioUrl: body.profileType !== "JOURNALIST" ? body.portfolioUrl || undefined : undefined,
+      pressCardKey: body.profileType === "JOURNALIST" ? body.pressCardKey : undefined,
       needsBib: body.profileType === "JOURNALIST" ? body.needsBib : false,
+      portfolioUrl: body.profileType !== "JOURNALIST" ? body.portfolioUrl || undefined : undefined,
       sport: match.sport,
       email: body.email.trim().toLowerCase(),
     });
