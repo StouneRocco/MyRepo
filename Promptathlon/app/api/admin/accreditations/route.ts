@@ -1,0 +1,1 @@
+import {NextResponse} from "next/server"; import {connectDB} from "@/lib/mongodb"; import {AccreditationRequest} from "@/models/AccreditationRequest"; export async function GET(){await connectDB();return NextResponse.json({requests:await AccreditationRequest.find().sort({createdAt:-1}).lean()})}
