@@ -12,7 +12,7 @@ type RequestRow = {
   sport: "BASKETBALL" | "HANDBALL";
   status: "PENDING" | "ACCEPTED" | "REJECTED";
   needsBib?: boolean;
-  pressCardUrl?: string;
+  pressCardKey?: string;
   portfolioUrl?: string;
   matchId: { _id: string; homeTeam: string; awayTeam: string; matchDateTime: string; venue: string } | string;
   notificationStatus?: string;
@@ -86,8 +86,8 @@ export default function AccreditationAdminList() {
                 return <tr key={row._id} className="border-t align-top">
                   <td className="p-3 font-medium">{row.firstName} {row.lastName}{row.needsBib && <span className="block text-xs text-gray-500">Chasuble demandée</span>}</td>
                   <td className="p-3">{profileLabels[row.profileType]}</td><td className="p-3">{row.sport === "BASKETBALL" ? "Basketball" : "Handball"}</td>
-                  <td className="p-3">{match ? <>{match.homeTeam} — {match.awayTeam}<span className="block text-xs text-gray-500">{new Date(match.matchDateTime).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}<br/>{match.venue}</span></> : "Match " + String(row.matchId)}</td>
-                  <td className="p-3"><a className="text-blue-700 underline" href={"mailto:" + row.email}>{row.email}</a>{row.pressCardUrl && <a className="mt-1 block text-blue-700 underline" href={row.pressCardUrl} target="_blank" rel="noreferrer">Carte de presse</a>}{row.portfolioUrl && <a className="mt-1 block text-blue-700 underline" href={row.portfolioUrl} target="_blank" rel="noreferrer">Portfolio</a>}</td>
+                  <td className="p-3">{match ? <>{match.homeTeam} — {match.awayTeam}<span className="block text-xs text-gray-500">{new Date(match.matchDateTime).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}<br />{match.venue}</span></> : "Match " + String(row.matchId)}</td>
+                  <td className="p-3"><a className="text-blue-700 underline" href={"mailto:" + row.email}>{row.email}</a>{row.pressCardKey && <a className="mt-1 block text-blue-700 underline" href={"/api/admin/accreditations/" + row._id + "/document"} target="_blank" rel="noreferrer">Télécharger la carte de presse</a>}{row.portfolioUrl && <a className="mt-1 block text-blue-700 underline" href={row.portfolioUrl} target="_blank" rel="noreferrer">Portfolio externe</a>}</td>
                   <td className="p-3">{statusLabels[row.status]}</td><td className="p-3">{row.notificationStatus || "Non renseigné"}</td>
                   <td className="p-3">{row.status === "PENDING" ? <div className="flex gap-2"><button disabled={busy === row._id} onClick={() => void decide(row._id, "ACCEPTED")} className="rounded bg-green-700 px-3 py-2 text-white disabled:opacity-50">Accepter</button><button disabled={busy === row._id} onClick={() => void decide(row._id, "REJECTED")} className="rounded bg-red-700 px-3 py-2 text-white disabled:opacity-50">Refuser</button></div> : "Traité"}</td>
                 </tr>;
