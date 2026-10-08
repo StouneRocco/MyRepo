@@ -1,0 +1,1 @@
+import MatchList from "@/components/matches/MatchList"; export default function Page(){return <MatchList sport="BASKETBALL" title="Matchs de basketball"/>}
