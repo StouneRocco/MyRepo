@@ -3,6 +3,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/mongodb";
 import { Admin } from "@/models/Admin";
 import { createSession, verifyPassword } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const loginSchema = z.object({
   email: z.email().max(254),
@@ -11,6 +12,8 @@ const loginSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const rate = await enforceRateLimit(req, "admin-login", 10, 15 * 60 * 1000);
+    if (!rate.allowed) return NextResponse.json({ message: "Trop de tentatives. Réessayez plus tard." }, { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } });
     const parsed = loginSchema.safeParse(await req.json());
     if (!parsed.success) {
       return NextResponse.json({ message: "Identifiants invalides." }, { status: 400 });
