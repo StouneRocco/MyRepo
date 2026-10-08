@@ -1,1 +1,5 @@
-import {connectDB} from "@/lib/mongodb"; import {Match} from "@/models/Match"; import Link from "next/link"; export default async function Page(){await connectDB();const matches=await Match.find().sort({matchDateTime:1}).lean();return <main className="min-h-screen p-10"><div className="mx-auto max-w-6xl"><Link href="/admin" className="text-blue-600">← Dashboard</Link><h1 className="mt-4 text-3xl font-bold">Gestion des matchs</h1><div className="mt-8 space-y-3">{matches.map(m=><div key={String(m._id)} className="rounded-xl bg-white p-5 ring-1 ring-gray-200"><b>{m.sport} · {m.homeTeam} — {m.awayTeam}</b><p className="text-sm text-gray-600">{new Date(m.matchDateTime).toLocaleString("fr-FR")} · {m.venue}</p></div>)}</div></div></main>}
+import MatchAdminManager from "@/components/admin/MatchAdminManager";
+
+export default function Page() {
+  return <MatchAdminManager />;
+}
