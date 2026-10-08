@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
   try {
     await connectDB();
-    const request = await AccreditationRequest.findById(id).select("pressCardKey").lean();
+    const request = await AccreditationRequest.findById(id).select("pressCardKey").lean().exec() as { pressCardKey?: string } | null;
     if (!request?.pressCardKey) {
       return NextResponse.json({ message: "Aucune carte de presse n'est associée à cette demande." }, { status: 404 });
     }
