@@ -21,21 +21,13 @@ export default function AccreditationForm({ matchId }: { matchId: string }) {
     setUploading(true);
     setMessage("Téléversement sécurisé de la carte de presse…");
     try {
-      const signed = await fetch("/api/accreditations/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentType: file.type }),
-      });
-      const upload = await signed.json();
-      if (!signed.ok) throw new Error(upload.message || "Téléversement indisponible.");
-      const result = await fetch(upload.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!result.ok) throw new Error("Le stockage a refusé le fichier. Vérifiez la configuration CORS du bucket.");
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await fetch("/api/accreditations/upload", { method: "POST", body: formData });
+      const upload = await result.json();
+      if (!result.ok) throw new Error(upload.message || "Téléversement indisponible.");
       setPressCardKey(upload.key);
-      setMessage("Carte de presse téléversée de façon privée.");
+      setMessage(upload.message || "Carte de presse téléversée de façon privée.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Échec du téléversement.");
     } finally {
