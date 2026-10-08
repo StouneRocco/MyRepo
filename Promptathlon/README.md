@@ -7,6 +7,8 @@ Application Next.js (App Router), TypeScript, Tailwind CSS et MongoDB/Mongoose p
 - Pages publiques par sport, liste des matchs à venir et formulaire de demande.
 - Clôture des demandes à la date limite du match (par défaut 24 heures avant le coup d'envoi), contrôlée côté serveur.
 - Prévention des demandes en double (index MongoDB unique).
+- Carte de presse PDF téléversée directement dans un stockage privé compatible S3; taille maximale 5 Mo et type PDF contrôlés côté serveur.
+- Téléchargement de la carte de presse réservé à l'administration, via une URL signée de courte durée.
 - Administration protégée : consultation des demandes, filtrage par statut, création de matchs et acceptation/refus.
 - Sessions JWT dans un cookie HTTP-only et validation des entrées avec Zod.
 - Emails transactionnels de décision via Brevo lorsque les variables correspondantes sont configurées.
@@ -20,6 +22,13 @@ Copier `.env.example` vers `.env.local`, puis renseigner les valeurs réelles :
 - `AUTH_SECRET` : secret aléatoire unique d'au moins 32 caractères. Exemple de génération : `openssl rand -base64 32`.
 - `APP_TIMEZONE` : fuseau d'affichage, par défaut `Europe/Paris`.
 - `BREVO_API_KEY`, `BREVO_SENDER_EMAIL` et éventuellement `BREVO_SENDER_NAME` : nécessaires pour envoyer les emails de décision.
+- `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` et, si nécessaire, `S3_ENDPOINT` : accès au bucket privé pour les justificatifs.
+
+### Configuration du bucket privé
+
+Le bucket doit rester privé, sans accès anonyme en lecture. Configurez une règle CORS autorisant l'origine exacte du site à effectuer des requêtes `PUT` avec l'en-tête `Content-Type`. N'autorisez pas `*` en production. Les clés d'accès doivent être limitées au bucket utilisé par l'application. Les URL d'envoi expirent après 5 minutes et les URL de téléchargement après 60 secondes.
+
+Les fichiers acceptés sont les PDF de 5 Mo maximum. Le contrôle de taille est réalisé dans l'interface et à nouveau par le serveur après téléversement. Les objets orphelins (téléversés mais jamais associés à une demande) doivent être supprimés par une règle de cycle de vie du fournisseur, par exemple après 24 heures.
 
 Ne jamais committer `.env.local`, les secrets ou les identifiants de production. Si le secret d'authentification change, les sessions existantes deviennent invalides.
 
@@ -39,13 +48,15 @@ npm run build
 
 L'initialisation du premier compte administrateur doit être faite de façon contrôlée en base avec un mot de passe hashé (bcrypt). Aucun compte ni mot de passe par défaut n'est créé par l'application.
 
-## Points à finaliser avant la mise en production
+## Points à vérifier avant la mise en production
 
-- **Stockage des cartes de presse :** le formulaire actuel accepte encore une URL. Il faut intégrer un téléversement vers un stockage privé (S3 compatible ou équivalent), avec téléchargement signé réservé à l'administration, contrôle du type et de la taille et politique de rétention.
-- **Emails :** configurer et vérifier le domaine expéditeur Brevo. Une décision est sauvegardée même si l'envoi échoue; l'état d'envoi est visible afin d'éviter de confondre décision et notification.
-- **Protection anti-abus :** ajouter un rate limiting persistant aux endpoints publics et à la connexion.
-- **Exploitation :** confirmer l'hébergement, configurer les variables secrètes, les sauvegardes MongoDB, la rétention RGPD et les tests de bout en bout sur un environnement de préproduction.
+- Configurer les variables d'environnement MongoDB, JWT, Brevo et stockage privé.
+- Vérifier le domaine expéditeur Brevo et tester la délivrabilité.
+- Ajouter un rate limiting persistant aux endpoints publics et à la connexion.
+- Définir une politique de conservation/suppression des données personnelles et des cartes de presse, les sauvegardes MongoDB et les droits d'accès des administrateurs.
+- Tester le parcours complet sur un environnement de préproduction avec les services réels.
+- Vérifier les résultats du workflow GitHub Actions avant de fusionner.
 
 ## Branche de travail
 
-Les évolutions en cours sont dans la branche `feature/jda-security-baseline` et la pull request associée. Elles ne sont pas fusionnées dans la branche de base.
+Les évolutions sont dans la branche `feature/jda-security-baseline` et la pull request associée. Elles ne sont pas fusionnées dans la branche de base.
