@@ -7,7 +7,7 @@ const AccreditationRequestSchema = new Schema({
   firstName: { type: String, required: true, trim: true, maxlength: 100 },
   lastName: { type: String, required: true, trim: true, maxlength: 100 },
   email: { type: String, required: true, lowercase: true, trim: true, index: true, maxlength: 254 },
-  pressCardUrl: { type: String, maxlength: 2048 },
+  pressCardKey: { type: String, maxlength: 300 },
   needsBib: { type: Boolean, default: false },
   portfolioUrl: { type: String, maxlength: 2048 },
   status: { type: String, enum: ["PENDING", "ACCEPTED", "REJECTED"], default: "PENDING", index: true },
