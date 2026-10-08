@@ -36,7 +36,6 @@ export async function createPressCardUpload() {
     Bucket: bucket,
     Key: key,
     ContentType: "application/pdf",
-    Metadata: { purpose: "press-card" },
   }), { expiresIn: 300 });
   return { key, uploadUrl, expiresIn: 300 };
 }
@@ -50,8 +49,7 @@ export async function verifyPressCardObject(key: string) {
       object.ContentLength &&
       object.ContentLength > 0 &&
       object.ContentLength <= MAX_PRESS_CARD_BYTES &&
-      object.ContentType === "application/pdf" &&
-      object.Metadata?.purpose === "press-card",
+      object.ContentType === "application/pdf",
     );
   } catch {
     return false;
