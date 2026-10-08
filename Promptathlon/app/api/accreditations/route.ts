@@ -14,7 +14,16 @@ export async function POST(req: Request) {
   try {
     const body = parsed.data;
     if (body.profileType === "JOURNALIST") {
-      if (!body.pressCardKey || !(await verifyPressCardObject(body.pressCardKey))) {
+      if (!body.pressCardKey) {
+        return NextResponse.json({ message: "La carte de presse est obligatoire pour les journalistes." }, { status: 400 });
+      }
+      let validDocument = false;
+      try {
+        validDocument = await verifyPressCardObject(body.pressCardKey);
+      } catch {
+        return NextResponse.json({ message: "Le stockage privé n'est pas configuré ou est indisponible." }, { status: 503 });
+      }
+      if (!validDocument) {
         return NextResponse.json({ message: "La carte de presse est absente, invalide ou trop volumineuse. Téléversez un PDF de 5 Mo maximum." }, { status: 400 });
       }
     }
