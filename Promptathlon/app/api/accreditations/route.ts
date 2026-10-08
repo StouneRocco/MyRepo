@@ -4,8 +4,15 @@ import { Match } from "@/models/Match";
 import { AccreditationRequest } from "@/models/AccreditationRequest";
 import { accreditationSchema } from "@/lib/validations";
 import { verifyPressCardObject } from "@/lib/private-storage";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  try {
+    const rate = await enforceRateLimit(req, "accreditation-submit", 10, 15 * 60 * 1000);
+    if (!rate.allowed) return NextResponse.json({ message: "Trop de demandes depuis cette connexion. Réessayez plus tard." }, { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } });
+  } catch {
+    return NextResponse.json({ message: "Le service est momentanément indisponible." }, { status: 503 });
+  }
   const parsed = accreditationSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ message: "Vérifiez les informations saisies, dont la carte de presse pour les journalistes." }, { status: 400 });
