@@ -1,0 +1,78 @@
+SUJET 1 — CRÉATION D’UN SITE DE GESTION DES DEMANDES PRESSE
+
+ 
+
+Objectif
+
+Créer un site permettant de centraliser et gérer l’ensemble des demandes d’accréditation des journalistes, photographes et vidéastes souhaitant assister à nos matchs.
+
+L’objectif est de pouvoir transmettre un lien unique à l’ensemble de nos contacts presse, afin qu’ils puissent consulter les matchs disponibles et s’inscrire directement aux rencontres auxquelles ils souhaitent assister.
+
+ 
+
+1. Formulaire d’inscription — Journalistes / Presse
+
+Lors de leur inscription, les journalistes devront renseigner les informations suivantes :
+
+Nom
+Prénom
+Adresse e-mail
+Scan de leur carte de presse, si disponible
+Indication concernant leur besoin d’un chasuble
+ 
+
+2. Formulaire d’inscription — Photographes / Vidéastes
+
+Les photographes et vidéastes devront renseigner :
+
+Nom
+Prénom
+Adresse e-mail
+Lien vers leur portfolio
+Le portfolio sera facultatif, mais fortement recommandé, notamment lorsque le nombre de demandes est important et qu’une sélection doit être effectuée.
+
+ 
+
+3. Gestion des demandes
+
+Depuis le site, nous devons pouvoir accéder à l’ensemble des demandes reçues pour chaque match.
+
+Nous devons pouvoir :
+
+Consulter les demandes ;
+Accepter ou refuser chaque demande ;
+Identifier facilement les différents profils (presse, photographe, vidéaste) ;
+Avoir une vision claire du nombre de demandes reçues pour chaque rencontre.
+ 
+
+4. Confirmation ou refus de la demande
+
+En cas d’acceptation :
+
+La personne reçoit automatiquement un e-mail de confirmation contenant les informations relatives au match :
+
+Match concerné
+Date
+Heure
+Lieu de la rencontre
+En cas de refus :
+
+La personne reçoit automatiquement un e-mail l’informant que sa demande n’a pas pu être retenue, en raison du nombre important de demandes reçues.
+
+ 
+
+5. Date limite d’inscription
+
+Les inscriptions doivent être automatiquement clôturées 24 heures avant le coup d’envoi du match.
+
+Une fois ce délai dépassé, il ne doit plus être possible de déposer une demande d’accréditation pour la rencontre concernée.
+
+ 
+
+6. Organisation par sport
+
+Le site devra comporter deux onglets distincts afin de faciliter la gestion des demandes :
+
+Handball
+Basketball
+Chaque onglet permettra de retrouver les différents matchs concernés ainsi que l’ensemble des demandes d’accréditation associées à chaque rencontre.
