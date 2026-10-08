@@ -11,6 +11,7 @@ export async function GET() {
   try {
     await connectDB();
     const requests = await AccreditationRequest.find()
+      .populate("matchId", "homeTeam awayTeam matchDateTime venue")
       .sort({ createdAt: -1 })
       .limit(500)
       .lean();
