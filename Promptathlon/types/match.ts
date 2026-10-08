@@ -1,0 +1,1 @@
+export type Sport="BASKETBALL"|"HANDBALL"; export type MatchStatus="UPCOMING"|"FINISHED"|"CANCELLED";

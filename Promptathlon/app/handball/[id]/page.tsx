@@ -1,0 +1,1 @@
+import MatchDetail from "@/components/matches/MatchDetail"; export default async function Page({params}:{params:Promise<{id:string}>}){return <MatchDetail id={(await params).id}/>} 
