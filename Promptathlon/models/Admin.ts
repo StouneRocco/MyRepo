@@ -5,7 +5,6 @@ const AdminSchema = new Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -26,6 +25,6 @@ const AdminSchema = new Schema(
   },
 );
 
-AdminSchema.index({ email: 1 }, { unique: true });
+AdminSchema.index({ email: 1 }, { unique: true, name: "unique_admin_email" });
 
 export const Admin = models.Admin || model("Admin", AdminSchema);
