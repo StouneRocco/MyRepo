@@ -7,9 +7,8 @@ import { AccreditationRequest } from "@/models/AccreditationRequest";
 import { Match } from "@/models/Match";
 import { sendDecisionEmail } from "@/lib/email";
 
-const decisionSchema = z.object({
-  status: z.enum(["ACCEPTED", "REJECTED"]),
-});
+const decisionSchema = z.object({ status: z.enum(["ACCEPTED", "REJECTED"]) });
+type MatchEmailData = { homeTeam: string; awayTeam: string; matchDateTime: Date; venue: string };
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAdminAuthenticated())) {
@@ -17,41 +16,36 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   const { id } = await params;
-  if (!mongoose.isValidObjectId(id)) {
-    return NextResponse.json({ message: "Demande invalide." }, { status: 400 });
-  }
-
+  if (!mongoose.isValidObjectId(id)) return NextResponse.json({ message: "Demande invalide." }, { status: 400 });
   const parsed = decisionSchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ message: "Décision invalide." }, { status: 400 });
-  }
+  if (!parsed.success) return NextResponse.json({ message: "Décision invalide." }, { status: 400 });
 
   try {
     await connectDB();
-    const request = await AccreditationRequest.findById(id);
-    if (!request) return NextResponse.json({ message: "Demande introuvable." }, { status: 404 });
-    if (request.status !== "PENDING") {
+    const request = await AccreditationRequest.findOneAndUpdate(
+      { _id: id, status: "PENDING" },
+      { $set: { status: parsed.data.status, processedAt: new Date(), notificationStatus: "SENDING" }, $unset: { notificationError: 1 } },
+      { new: true },
+    );
+    if (!request) {
+      const existing = await AccreditationRequest.findById(id).select("status").lean();
+      if (!existing) return NextResponse.json({ message: "Demande introuvable." }, { status: 404 });
       return NextResponse.json({ message: "Cette demande a déjà été traitée." }, { status: 409 });
     }
 
-    const match = await Match.findById(request.matchId).lean();
-    if (!match) return NextResponse.json({ message: "Match associé introuvable." }, { status: 404 });
-
-    request.status = parsed.data.status;
-    request.processedAt = new Date();
-    request.notificationStatus = "SENDING";
-    request.notificationError = undefined;
-    await request.save();
+    const match = await Match.findById(request.matchId).lean().exec() as MatchEmailData | null;
+    if (!match) {
+      request.notificationStatus = "FAILED";
+      request.notificationError = "Match associé introuvable.";
+      await request.save();
+      return NextResponse.json({ message: "Décision enregistrée, mais match associé introuvable." }, { status: 500 });
+    }
 
     try {
       await sendDecisionEmail({
-        to: request.email,
-        firstName: request.firstName,
-        status: parsed.data.status,
-        homeTeam: match.homeTeam,
-        awayTeam: match.awayTeam,
-        matchDateTime: match.matchDateTime,
-        venue: match.venue,
+        to: request.email, firstName: request.firstName, status: parsed.data.status,
+        homeTeam: match.homeTeam, awayTeam: match.awayTeam,
+        matchDateTime: match.matchDateTime, venue: match.venue,
       });
       request.notificationStatus = "SENT";
       request.notificationSentAt = new Date();
