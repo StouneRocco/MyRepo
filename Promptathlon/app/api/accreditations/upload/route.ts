@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { MAX_PRESS_CARD_BYTES, storePressCard } from "@/lib/private-storage";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  try {
+    const rate = await enforceRateLimit(request, "press-card-upload", 8, 60 * 60 * 1000);
+    if (!rate.allowed) return NextResponse.json({ message: "Trop de téléversements. Réessayez plus tard." }, { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } });
+  } catch {
+    return NextResponse.json({ message: "Le service de téléversement est momentanément indisponible." }, { status: 503 });
+  }
   let form: FormData;
   try {
     form = await request.formData();
