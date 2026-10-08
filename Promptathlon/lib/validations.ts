@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const optionalUrl = z.union([z.url().max(2048), z.literal("")]).optional();
+const safeHttpUrl = z.url().max(2048).refine((value) => /^https?:\\/\\//i.test(value), "Seules les URL HTTP(S) sont autorisées.");
+const optionalUrl = z.union([safeHttpUrl, z.literal("")]).optional();
 const pressCardKey = z.union([
   z.string().regex(/^press-cards\/[0-9a-f-]{36}$/),
   z.literal(""),
