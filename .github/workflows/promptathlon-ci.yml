@@ -1,0 +1,37 @@
+name: Promptathlon CI
+
+on:
+  push:
+    branches:
+      - "promptathlon/**"
+      - "feature/**"
+  pull_request:
+    branches:
+      - "promptathlon/**"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projet/Promptathlon
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: projet/Promptathlon/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/promptathlon
+          AUTH_SECRET: ci-only-secret-value-that-is-at-least-32-characters-long
+          APP_TIMEZONE: Europe/Paris
