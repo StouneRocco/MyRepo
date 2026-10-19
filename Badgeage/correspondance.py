@@ -4,200 +4,193 @@ from pathlib import Path
 from pymongo import MongoClient
 
 # --- CONFIGURATION MONGODB ---
-# À adapter avec votre URI et le nom de votre base de données
 MONGO_URI = "mongodb://localhost:27017/"
-NOM_BASE = "votre_nom_de_base" # Remplacer par le nom de votre base de données
+NOM_BASE = "pfe"  # À remplacer par le vrai nom de la base
 NOM_COLLECTION_SOURCE = "badgeage_effectif"
 NOM_COLLECTION_CIBLE = "badgeage_effectif2"
-
 CSV_PAR_DEFAUT = Path(__file__).resolve().parent / "Correspondance.csv"
 
+# Colonnes du CSV utilisées pour la correspondance et les champs de sortie.
+COL_CSV_EMPLACEMENT = "Emplacement (PDF)"
+COL_CSV_CODE = "Code espace final"
+COL_CSV_DESIGNATION = "Désignation salle"
+CHAMP_CODE_SORTIE = "Code espace final"
+CHAMP_DESIGNATION_SORTIE = "Désignation salle"
 
-def normaliser(chaine):
-    """Met en minuscules et retire les espaces superflus pour comparer sans erreur."""
-    if not isinstance(chaine, str):
+
+def normaliser(valeur):
+    """Normalise une valeur textuelle pour faire une comparaison insensible à la casse."""
+    if not isinstance(valeur, str):
         return ""
-    return chaine.strip().lower()
+    return " ".join(valeur.strip().lower().split())
+
+
+def detecter_separateur(extrait):
+    """Détecte le séparateur CSV, avec une solution de repli sur la virgule."""
+    try:
+        return csv.Sniffer().sniff(extrait, delimiters=",;\t|").delimiter
+    except csv.Error:
+        return ","
 
 
 def lire_correspondances(chemin_csv):
-    """
-    Lit le fichier CSV et construit un dictionnaire liant
-    une clé normalisée (ex: "salle de réunion" ou "spc")
-    à un tuple (code_ifc, designation_ifc).
-    """
+    """Construit emplacement PDF normalisé -> (code espace final, désignation)."""
     correspondances = {}
     doublons = 0
-    print(f"Chargement des correspondances depuis : {chemin_csv}")
+    lignes_sans_code = 0
 
-    with chemin_csv.open("r", encoding="utf-8-sig") as fichier:
-        # csv.DictReader lit la première ligne pour les noms de colonnes
-        lecteur = csv.DictReader(fichier, delimiter=";")
-        
-        # S'assurer que les colonnes attendues existent
-        colonnes_attendues = ["Emplacement", "Code salle", "Désignation salle"]
-        if not lecteur.fieldnames or not all(c in lecteur.fieldnames for c in colonnes_attendues):
+    print(f"Chargement des correspondances depuis : {chemin_csv}")
+    with chemin_csv.open("r", encoding="utf-8-sig", newline="") as fichier:
+        extrait = fichier.read(8192)
+        fichier.seek(0)
+        separateur = detecter_separateur(extrait)
+        lecteur = csv.DictReader(fichier, delimiter=separateur)
+
+        if not lecteur.fieldnames:
+            raise ValueError("Le CSV est vide ou ne contient pas d'en-tête.")
+
+        lecteur.fieldnames = [nom.strip().lstrip("\ufeff") if nom else "" for nom in lecteur.fieldnames]
+        colonnes = lecteur.fieldnames
+        obligatoires = [COL_CSV_EMPLACEMENT, COL_CSV_CODE, COL_CSV_DESIGNATION]
+        manquantes = [nom for nom in obligatoires if nom not in colonnes]
+        if manquantes:
             raise ValueError(
-                f"Le CSV doit contenir ces colonnes (séparées par ';') : {colonnes_attendues}. "
-                f"Trouvé : {lecteur.fieldnames}"
+                f"Colonnes manquantes dans {chemin_csv}: {manquantes}. "
+                f"Séparateur détecté : {separateur!r}. Colonnes trouvées : {colonnes}"
             )
 
-        for ligne in lecteur:
-            # On cherche par Emplacement dans le CSV
-            colonne_emplacement = "Emplacement"
-            cle = normaliser(ligne.get(colonne_emplacement))
-            
-            code = ligne.get("Code salle", "").strip()
-            designation = ligne.get("Désignation salle", "").strip()
+        print(f"Séparateur détecté : {separateur!r}")
+        print(f"Colonnes utilisées : {obligatoires}")
+        for numero, ligne in enumerate(lecteur, start=2):
+            emplacement_brut = ligne.get(COL_CSV_EMPLACEMENT) or ""
+            cle = normaliser(emplacement_brut)
+            code = (ligne.get(COL_CSV_CODE) or "").strip()
+            designation = (ligne.get(COL_CSV_DESIGNATION) or "").strip()
 
+            # Une ligne sans code final ne permet pas d'enrichir un document.
             if not cle or not code:
+                lignes_sans_code += 1
                 continue
 
+            nouvelle = (code, designation)
             if cle in correspondances:
                 doublons += 1
-                ancienne = correspondances[cle]
-                nouvelle = (code, designation)
-                if ancienne != nouvelle:
+                if correspondances[cle] != nouvelle:
                     print(
-                        f"AVERTISSEMENT : correspondance ambiguë pour "
-                        f"{ligne.get(colonne_emplacement)!r}. "
-                        f"Valeur conservée : {ancienne}"
+                        f"AVERTISSEMENT ligne {numero}: doublon ambigu pour "
+                        f"{emplacement_brut!r}; valeur conservée : {correspondances[cle]!r}, "
+                        f"valeur ignorée : {nouvelle!r}"
                     )
                 continue
-
-            correspondances[cle] = (code, designation)
+            correspondances[cle] = nouvelle
 
     print(f"{len(correspondances)} correspondances utilisables chargées.")
+    print(f"{lignes_sans_code} ligne(s) CSV sans emplacement ou code final ignorée(s).")
     if doublons:
-        print(f"{doublons} clé(s) en double détectée(s) dans le CSV.")
+        print(f"{doublons} clé(s) en double détectée(s).")
     return correspondances
 
 
 def main():
     analyseur = argparse.ArgumentParser(
-        description="Crée une nouvelle collection et y ajoute le code salle et la désignation."
+        description=(
+            "Copie badgeage_effectif vers badgeage_effectif2, recherche chaque ancien "
+            "Emplacement dans Correspondance.csv, puis remplace Emplacement par les "
+            "champs Code espace final et Désignation salle."
+        )
     )
-    analyseur.add_argument(
-        "--csv",
-        type=Path,
-        default=CSV_PAR_DEFAUT,
-        help="Chemin vers Correspondance.csv (par défaut : à côté du script).",
-    )
-    analyseur.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Simule les changements sans créer la nouvelle collection ni écrire dans MongoDB.",
-    )
-    analyseur.add_argument(
-        "--remplacer-emplacement",
-        action="store_true",
-        help=(
-            "Remplace aussi la valeur Emplacement par le code IFC. "
-            "Par défaut, Emplacement est conservé."
-        ),
-    )
+    analyseur.add_argument("--csv", type=Path, default=CSV_PAR_DEFAUT,
+                           help="Chemin de Correspondance.csv (par défaut à côté du script).")
+    analyseur.add_argument("--dry-run", action="store_true",
+                           help="Simule le traitement sans modifier/créer badgeage_effectif2.")
     args = analyseur.parse_args()
 
     if not args.csv.is_file():
-        raise FileNotFoundError(
-            f"Fichier introuvable : {args.csv}\n"
-            "Place Correspondance.csv à côté du script ou utilise --csv."
+        raise FileNotFoundError(f"Fichier CSV introuvable : {args.csv}")
+    if NOM_BASE == "votre_nom_de_base":
+        raise ValueError(
+            "Configure NOM_BASE en haut de correspondance.py avec le vrai nom de la base MongoDB."
         )
 
     correspondances = lire_correspondances(args.csv)
-
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     try:
-        # Vérifie que MongoDB est accessible.
         client.admin.command("ping")
         db = client[NOM_BASE]
-        collection_source = db[NOM_COLLECTION_SOURCE]
-        collection_cible = db[NOM_COLLECTION_CIBLE]
+        source = db[NOM_COLLECTION_SOURCE]
+        cible = db[NOM_COLLECTION_CIBLE]
+        total = source.count_documents({})
 
-        total = collection_source.count_documents({})
-
-        print(f"\nBase de données    : {NOM_BASE}")
-        print(f"Collection source  : {NOM_COLLECTION_SOURCE}")
-        print(f"Collection cible   : {NOM_COLLECTION_CIBLE}")
-        print(f"Documents à traiter: {total}")
+        print(f"\nBase de données     : {NOM_BASE}")
+        print(f"Collection source   : {NOM_COLLECTION_SOURCE}")
+        print(f"Collection cible    : {NOM_COLLECTION_CIBLE}")
+        print(f"Documents source    : {total}")
 
         if args.dry_run:
-            print("\n>>> MODE SIMULATION : aucune modification ne sera enregistrée, la collection cible ne sera pas créée. <<<")
-            collection_travail = collection_source # On lit la source pour simuler l'analyse
+            travail = source
+            print("\nMODE SIMULATION : aucune écriture MongoDB ne sera effectuée.")
         else:
-            print(f"\nClonage de {NOM_COLLECTION_SOURCE} vers {NOM_COLLECTION_CIBLE}...")
-            print("(Cette opération écrase la collection cible existante)")
-            # Le $out permet à MongoDB de copier intégralement la collection côté serveur
-            collection_source.aggregate([{"$out": NOM_COLLECTION_CIBLE}])
-            print("Clonage terminé. Début de la mise à jour...")
-            collection_travail = collection_cible # On travaille désormais exclusivement sur la copie
+            print(f"\nCopie de {NOM_COLLECTION_SOURCE} vers {NOM_COLLECTION_CIBLE}...")
+            print("ATTENTION : le contenu existant de la collection cible sera remplacé.")
+            source.aggregate([{"$out": NOM_COLLECTION_CIBLE}])
+            travail = cible
+            print("Copie terminée. Application des correspondances...")
 
-        trouves = 0
-        non_correspondants = 0
+        correspondants = 0
+        sans_correspondance = 0
+        modifies = 0
         deja_a_jour = 0
-        ecrits = 0
-        emplacements_inconnus = {}
+        inconnus = {}
 
-        # On parcourt la collection de travail (qui est une copie exacte de la source si pas en dry_run)
-        for document in collection_travail.find({}, {"Emplacement": 1, "Code salle": 1, "Désignation salle": 1}):
+        # Le document lu dans la cible conserve le même _id que celui de la source.
+        projection = {"Emplacement": 1, CHAMP_CODE_SORTIE: 1, CHAMP_DESIGNATION_SORTIE: 1}
+        for document in travail.find({}, projection):
             emplacement = document.get("Emplacement")
             cle = normaliser(emplacement)
-
             if not cle or cle not in correspondances:
-                non_correspondants += 1
+                sans_correspondance += 1
                 valeur = str(emplacement) if emplacement is not None else "<vide>"
-                emplacements_inconnus[valeur] = emplacements_inconnus.get(valeur, 0) + 1
+                inconnus[valeur] = inconnus.get(valeur, 0) + 1
+                # On conserve Emplacement pour ces documents : sans code dans le CSV,
+                # le supprimer ferait perdre la seule valeur de rapprochement dans la cible.
                 continue
 
             code, designation = correspondances[cle]
-            trouves += 1
-
-            changements = {
-                "Code salle": code,
-                "Désignation salle": designation,
+            correspondants += 1
+            champs = {
+                CHAMP_CODE_SORTIE: code,
+                CHAMP_DESIGNATION_SORTIE: designation,
             }
-            if args.remplacer_emplacement:
-                changements["Emplacement"] = code
-
-            # Évite une écriture si les valeurs sont déjà identiques dans la base.
-            if all(document.get(champ) == valeur for champ, valeur in changements.items()):
+            emplacement_deja_absent = "Emplacement" not in document
+            if all(document.get(champ) == valeur for champ, valeur in champs.items()) and emplacement_deja_absent:
                 deja_a_jour += 1
                 continue
 
             if not args.dry_run:
-                # Mise à jour sur la nouvelle collection (collection_cible via la variable collection_travail)
-                resultat = collection_travail.update_one(
+                resultat = travail.update_one(
                     {"_id": document["_id"]},
-                    {"$set": changements},
+                    {"$set": champs, "$unset": {"Emplacement": ""}},
                 )
-                ecrits += resultat.modified_count
+                modifies += resultat.modified_count
 
         print("\n--- Bilan ---")
-        print(f"Documents avec correspondance : {trouves}")
+        print(f"Documents avec correspondance : {correspondants}")
+        print(f"Documents modifiés dans {NOM_COLLECTION_CIBLE if not args.dry_run else 'la simulation'} : {modifies}")
         print(f"Documents déjà à jour : {deja_a_jour}")
-        print(f"Documents mis à jour dans {NOM_COLLECTION_CIBLE if not args.dry_run else 'SIMULATION'} : {ecrits if not args.dry_run else 0}")
+        print(f"Documents sans correspondance : {sans_correspondance}")
         if args.dry_run:
-            print("RAPPEL : Les changements simulés n'ont pas été enregistrés.")
-        print(f"Documents sans correspondance : {non_correspondants}")
-
-        if emplacements_inconnus:
-            print("\nValeurs de « Emplacement » sans correspondance (20 premières) :")
-            for valeur, nombre in sorted(
-                emplacements_inconnus.items(),
-                key=lambda element: (-element[1], element[0])
-            )[:20]:
+            print("Aucune modification enregistrée. Relance sans --dry-run pour appliquer les changements.")
+        if inconnus:
+            print("\nValeurs sans correspondance (20 premières) :")
+            for valeur, nombre in sorted(inconnus.items(), key=lambda item: (-item[1], item[0]))[:20]:
                 print(f"  {valeur!r} : {nombre} document(s)")
             print(
-                "\nSi ces valeurs sont des codes (ex: « SPC ») alors que le CSV "
-                "contient des noms (ex: « 001_FabLab »), il faut compléter "
-                "Correspondance.csv avec une clé correspondant exactement à "
-                "la valeur enregistrée dans la base MongoDB."
+                "Ces documents gardent leur champ Emplacement dans la cible pour éviter une perte "
+                "d'information. Ajoute un Code espace final correspondant dans le CSV, puis relance le script."
             )
-
-    except Exception as e:
-        print(f"Erreur lors de la connexion ou du traitement MongoDB : {e}")
     finally:
         client.close()
+
 
 if __name__ == "__main__":
     main()
