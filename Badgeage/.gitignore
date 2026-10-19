@@ -1,0 +1,37 @@
+
+# Environnement virtuel Python
+.venv/
+venv/
+env/
+ENV/
+
+# Fichiers Python générés
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packaging Python
+build/
+dist/
+*.egg-info/
+
+# Variables d'environnement et secrets
+.env
+.env.*
+!.env.example
+
+# Éditeurs de code
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs et fichiers temporaires
+*.log
+*.tmp
+*.bak
