@@ -92,7 +92,7 @@ def register_badgeage_views(app, auth_required):
             return jsonify(error="Niveau inconnu."), 404
         try:
             data = load_data()
-            return jsonify(sorted(day for day, levels in data.items() if levels[floor]))
+            return jsonify(sorted(day for day, levels in data.items() if sum(room['total'] for room in levels[floor].values()) > 0))
         except (OSError, ValueError, csv.Error):
             return jsonify(error="Impossible de lire le fichier de badgeages CSV."), 503
 
