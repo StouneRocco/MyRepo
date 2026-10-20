@@ -1,0 +1,9 @@
+[
+  { "temperature": 12, "color": [37, 99, 235] },
+  { "temperature": 15, "color": [6, 182, 212] },
+  { "temperature": 18, "color": [20, 184, 166] },
+  { "temperature": 21, "color": [34, 197, 94] },
+  { "temperature": 24, "color": [250, 204, 21] },
+  { "temperature": 27, "color": [249, 115, 22] },
+  { "temperature": 30, "color": [239, 68, 68] }
+]
