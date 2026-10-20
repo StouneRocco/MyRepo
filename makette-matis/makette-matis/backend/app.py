@@ -212,6 +212,8 @@ def room_temperatures():
 # Lecture journalière pour l'interface Axel ; les commandes Pi restent inchangées.
 from temperature_day import register_temperature_views
 register_temperature_views(app, temperatures, auth_required)
+from badgeage_views import register_badgeage_views
+register_badgeage_views(app, auth_required)
 from view_state import SharedView, register_shared_view
 shared_view = SharedView(users.database['viewer_state'], temperatures, CAMERA_URL, requests)
 register_shared_view(app, shared_view, auth_required)
