@@ -97,11 +97,13 @@ function DayChart({ values, estimated, minute, label='Températures de la salle 
     <text x="34" y="129">00:00</text><text x="306" y="129" textAnchor="end">23:55</text>
   </svg>;
 }
-function Dashboard({ session, logout, onBadgeages }) {
+function Dashboard({ session, logout, onBadgeages, predictionData, onPredictionData, onClearPredictions }) {
   const [plans,setPlans]=useState([]),[floor,setFloor]=useState(3),[days,setDays]=useState([]),[day,setDay]=useState('');
   const [frame,setFrame]=useState(null),[minute,setMinute]=useState(0),[playing,setPlaying]=useState(false);
+  const [predictionLoading,setPredictionLoading]=useState(false);
   const [interpolate,setInterpolate]=useState(true);
   const [heatmap,setHeatmap]=useState(true),[selected,setSelected]=useState(null);
+  const [showRoomLabels,setShowRoomLabels]=useState(false);
   const [status,setStatus]=useState(null),[error,setError]=useState(''),[projectionError,setProjectionError]=useState('');
   const sync=useRef(null), plansRef=useRef(plans), view=useRef({floor:3,day:'',minute:0,playing:false,heatmap:true,interpolate:true,roomId:null});
   plansRef.current=plans;
@@ -152,29 +154,40 @@ function Dashboard({ session, logout, onBadgeages }) {
   const floorSeries=floorDailySeries(series,plan?.rooms||[],estimated);
   const roomValues=selected?(series?.[selected.id]||Array(288).fill(null)):[];
   const stats=selected?dailySummary(roomValues):overall;
-  const current=selected?roomValues[bucket]:overall.mean;
+  const predictionHour = Math.min(23, Math.floor(minute / 60));
+  const predictionValues = {};
+  for (const item of (predictionData?.predictions || [])) {
+    const point = item.hourly?.[predictionHour];
+    const value = point?.temperature ?? item.temperature;
+    const match = plan?.rooms.find(r => r.code === item.room || r.name === item.room || r.id === item.room);
+    if (match && Number.isFinite(value)) predictionValues[match.id] = value;
+  }
+  const showingPredictions = !!predictionData && Object.keys(predictionValues).length > 0;
+  const current=selected?(showingPredictions ? predictionValues[selected.id] : roomValues[bucket]):overall.mean;
   return <main className="dashboard">
     <header><div><span className="brand">E /</span><b>ESEO <span className="muted">· Maquette thermique</span></b></div><div className="header-actions"><button className="secondary" onClick={onBadgeages}>Badgeages</button><AppDisplay/><button className="secondary" onClick={logout}>Déconnexion · {session.username}</button></div></header>
     <section className="thermal-workspace">
       <div className="thermal-controls">
         <label>Étage<select value={floor} onChange={e=>changeView({floor:Number(e.target.value),roomId:null,playing:false})}>{plans.map(p=><option key={p.floor} value={p.floor}>N{p.floor}</option>)}</select></label>
-        <label>Journée<input type="date" value={day} min={days[0]} max={days[days.length-1]} disabled={!days.length} onChange={e=>{if(days.includes(e.target.value)){changeView({day:e.target.value,minute:0,playing:false});setError('');}else if(e.target.value){setError('Aucune donnée disponible pour cette journée.');}}}/></label>
+        <label>Journée<input type="date" value={day} onChange={async e=>{const chosen=e.target.value;if(!chosen)return;changeView({day:chosen,minute:0,playing:false});setError('');setPredictionLoading(false);if(days.includes(chosen)){onPredictionData(null);return;}setPredictionLoading(true);setError('Calcul des estimations en cours…');onPredictionData(null);try{const result=await api(`predictions/temperatures?${new URLSearchParams({date:chosen})}`,session.token);onPredictionData({...result,date:chosen});setError('');}catch(err){setError(err.message||'Impossible de calculer cette journée.');}finally{setPredictionLoading(false);}}}/></label>
         <label className="heat-switch"><input type="checkbox" checked={heatmap} onChange={e=>changeView({heatmap:e.target.checked})}/> Heatmap</label>
         <label className="heat-switch"><input type="checkbox" checked={interpolate} onChange={e=>changeView({interpolate:e.target.checked})}/> Combler les trous</label>
+        <label className="heat-switch"><input type="checkbox" checked={showRoomLabels} onChange={e=>setShowRoomLabels(e.target.checked)}/> Code et nom des salles</label>
         <div className="projection-state"><span className={`status-dot ${status?.available?'online':''}`}/>{floor!==3?'N4 en consultation · projection N3 uniquement':status?.available?'Projecteur joignable':status?'Projecteur indisponible':'Connexion au projecteur…'}</div>
         <ProjectionCalibration token={session.token} request={(path, body) => api(path, session.token, body)} onSuccess={() => setStatus({available:true})}/>
       </div>
+      {showingPredictions && <div className="prediction-overlay-banner"><strong>Mode estimation IA · {dayLabel(predictionData.date)}</strong><span>Le plan affiche les températures prédites à {String(predictionHour).padStart(2, '0')} h. Les valeurs prédites sont distinctes des mesures réelles.</span><button className="secondary" onClick={onClearPredictions}>Quitter les estimations</button></div>}
       <div className="thermal-body">
-        <section className="plan-view"><div className="plan-heading"><h2>Plan N{floor}</h2><span>{dayLabel(day)} · {timeLabel(minute)}</span></div>
+        <section className="plan-view"><div className="plan-heading"><div className="plan-title-group"><h2>Plan N{floor}</h2>{(predictionLoading || (predictionData?.date===day && predictionData?.predictions?.length>0)) && <span className={`estimate-status ${predictionLoading?'loading':''}`} aria-live="polite">{predictionLoading?'Estimations en cours…':'Estimations'}</span>}</div><span>{dayLabel(day)} · {timeLabel(minute)}</span></div>
           <div className="map">{plan&&<svg viewBox={plan.bounds.join(' ')} role="group" aria-label={`Heatmap des salles de N${floor}`}>
             {plan.rooms.map(room=>{
-              const value=series?.[room.id]?.[bucket]??null;
-              const isEstimated=!!estimated?.[room.id]?.[bucket];
+              const value=showingPredictions ? (predictionValues[room.id] ?? null) : (series?.[room.id]?.[bucket]??null);
+              const isEstimated=showingPredictions ? predictionValues[room.id] != null : !!estimated?.[room.id]?.[bucket];
               const x=room.points.reduce((n,p)=>n+p[0],0)/room.points.length,y=room.points.reduce((n,p)=>n+p[1],0)/room.points.length;
               const width=Math.max(...room.points.map(p=>p[0]))-Math.min(...room.points.map(p=>p[0]));
               const height=Math.max(...room.points.map(p=>p[1]))-Math.min(...room.points.map(p=>p[1]));
               const font=Math.max(.6,Math.min(width/5,height/4,plan.bounds[2]/70));
-              return <g key={room.id}><polygon points={room.points.map(p=>p.join(',')).join(' ')} style={{fill:heatmap?temperatureColor(value):selected?.id===room.id?'#ffe072':'#e6eef0'}} className={`room ${selected?.id===room.id?'selected':''}`} role="button" tabIndex="0" aria-label={`${room.code}, ${value==null?'sans mesure':`${number(value)} degrés${isEstimated?", valeur interpolée":""}`}`} aria-pressed={selected?.id===room.id} onClick={()=>choose(room)} onKeyDown={e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose(room);}}}><title>{room.code} · {room.name} · {value==null?'Sans mesure':`${number(value)} °C${isEstimated?" · Interpolée (relevé manquant)":" · Mesurée"}`}</title></polygon><text x={x} y={y-font*.55} style={{fontSize:font*.7}}>{room.code}</text><text className="room-temperature" x={x} y={y+font*.6} style={{fontSize:font}}>{value==null?'—':`${isEstimated?"≈ ":""}${number(value)}°C`}</text></g>;
+              return <g key={room.id}><polygon points={room.points.map(p=>p.join(',')).join(' ')} style={{fill:heatmap?temperatureColor(value):selected?.id===room.id?'#ffe072':'#e6eef0'}} className={`room ${selected?.id===room.id?'selected':''}`} role="button" tabIndex="0" aria-label={`${room.code}, ${value==null?'sans mesure':`${number(value)} degrés${isEstimated?(showingPredictions?", valeur prédite":", valeur interpolée"):""}`}`} aria-pressed={selected?.id===room.id} onClick={()=>choose(room)} onKeyDown={e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose(room);}}}><title>{room.code} · {room.name} · {value==null?'Sans mesure':`${number(value)} °C${isEstimated?(showingPredictions?" · Prédiction IA":" · Interpolée (relevé manquant)"):" · Mesurée"}`}</title></polygon>{showRoomLabels&&<><text x={x} y={y-font*1.15} style={{fontSize:font*.68,fontWeight:700}}>{room.code}</text><text x={x} y={y-font*.42} style={{fontSize:font*.58}}>{room.name}</text></>}<text className="room-temperature" x={x} y={y+font*.6} style={{fontSize:font}}>{value==null?'—':`${isEstimated?"≈ ":""}${number(value)}°C`}</text></g>;
             })}
             <image href={`/plans/structure/N${floor}.svg`} x="0" y="0" width="800" height="600" preserveAspectRatio="none" pointerEvents="none" aria-hidden="true" />
           </svg>}</div>
@@ -183,14 +196,14 @@ function Dashboard({ session, logout, onBadgeages }) {
         <aside className="room-detail">
           <RoomPicker rooms={plan?.rooms || []} selected={selected} onSelect={choose} disabled={!plan}/>
           <div className="detail-heading"><span className="eyebrow">{selected?'SALLE SÉLECTIONNÉE':'VUE GLOBALE'}</span><h2>{selected?.name||`Étage N${floor}`}</h2><p>{selected?.code||`${overall.count} salles avec une température à cet horaire`}</p></div>
-          <div className="temperature-current"><strong>{roomEstimated?.[bucket]?"≈ ":""}{number(current)} <small>°C</small></strong><p>{selected?'Température':'Moyenne des salles'} · {timeLabel(minute)}<br/>{selected?(roomEstimated?.[bucket]?"Interpolée · relevé manquant":current==null?"Sans mesure disponible":"Mesure d’origine"): `${estimatedNow} interpolées · ${missingNow} sans valeur`}</p></div>
+          <div className="temperature-current"><strong>{(showingPredictions || roomEstimated?.[bucket])?"≈ ":""}{number(current)} <small>°C</small></strong><p>{selected?'Température':'Moyenne des salles'} · {timeLabel(minute)}<br/>{showingPredictions ? `Estimation IA · ${predictionData.date}` : selected?(roomEstimated?.[bucket]?"Interpolée · relevé manquant":current==null?"Sans mesure disponible":"Mesure d’origine"): `${estimatedNow} interpolées · ${missingNow} sans valeur`}</p></div>
           <div className="temperature-stats"><div><span>Minimum</span><b>{number(stats.min)}°C</b></div><div><span>Moyenne</span><b>{number(stats.mean)}°C</b></div><div><span>Maximum</span><b>{number(stats.max)}°C</b></div></div>
-          {selected?<><p className="detail-caption">Évolution de la salle · {dayLabel(day)}</p><DayChart values={roomValues} estimated={roomEstimated} minute={minute}/><p>{288-gapCount} intervalles mesurés · {gapCount} sans mesure importée, dont {filledCount} interpolés. {gapCount-filledCount} restent sans valeur.</p><details><summary>Historique de la journée</summary><div className="history-table"><table><thead><tr><th>Horaire</th><th>Température / origine</th></tr></thead><tbody>{roomValues.map((value,i)=><tr key={i}><td>{timeLabel(i*5)}</td><td>{value==null?'Sans mesure':`${roomEstimated?.[i]?'≈ ':''}${number(value)} °C · ${roomEstimated?.[i]?'Interpolée':'Mesurée'}`}</td></tr>)}</tbody></table></div></details><button className="secondary" onClick={()=>choose(null)}>Revenir à la vue globale</button></>:<><p className="detail-caption">Moyenne de l’étage sur la journée · {dayLabel(day)}</p><DayChart values={floorSeries.values} estimated={floorSeries.estimated} minute={minute} label="Température moyenne de l’étage pendant la journée"/><p className="detail-caption">Moyenne calculée à chaque horaire sur les salles ayant une valeur. Les segments orange comprennent des valeurs interpolées.</p></>}
+          {selected?<><p className="detail-caption">Évolution de la salle · {dayLabel(day)}</p><DayChart values={showingPredictions ? Array.from({length:288},(_,i)=>{const row=predictionData.predictions.find(item=>item.room===selected?.code||item.room===selected?.name||item.room===selected?.id);const h=row?.hourly?.[Math.floor(i/12)];return h?.temperature ?? row?.temperature ?? null;}) : roomValues} estimated={showingPredictions ? Array(288).fill(true) : roomEstimated} minute={minute} label={showingPredictions?"Profil horaire prédit":"Évolution de la salle pendant la journée"}/><p>{288-gapCount} intervalles mesurés · {gapCount} sans mesure importée, dont {filledCount} interpolés. {gapCount-filledCount} restent sans valeur.</p><details><summary>Historique de la journée</summary><div className="history-table"><table><thead><tr><th>Horaire</th><th>Température / origine</th></tr></thead><tbody>{roomValues.map((value,i)=><tr key={i}><td>{timeLabel(i*5)}</td><td>{value==null?'Sans mesure':`${roomEstimated?.[i]?'≈ ':''}${number(value)} °C · ${roomEstimated?.[i]?'Interpolée':'Mesurée'}`}</td></tr>)}</tbody></table></div></details><button className="secondary" onClick={()=>choose(null)}>Revenir à la vue globale</button></>:<><p className="detail-caption">Moyenne de l’étage sur la journée · {dayLabel(day)}</p><DayChart values={floorSeries.values} estimated={floorSeries.estimated} minute={minute} label="Température moyenne de l’étage pendant la journée"/><p className="detail-caption">Moyenne calculée à chaque horaire sur les salles ayant une valeur. Les segments orange comprennent des valeurs interpolées.</p></>}
         </aside>
       </div>
       <section className="timeline">
-        <div className="timeline-top"><button disabled={!frame} className={playing?'pause':''} onClick={()=>changeView({playing:!playing})}>{playing?'Ⅱ Pause':'▶ Lire la journée'}</button><div><b>{timeLabel(minute)}</b><span>{playing?'Lecture en boucle · 48 s / journée':'Déplacez le curseur pour explorer la journée'}</span></div><button className="secondary" disabled={!frame} onClick={()=>changeView({playing:false,minute:0})}>Recommencer</button></div>
-        <input aria-label="Horaire de la journée" type="range" min="0" max="1435" step="5" value={minute} disabled={!frame} onChange={e=>changeView({playing:false,minute:Number(e.target.value)})}/>
+        <div className="timeline-top"><button disabled={!frame||predictionLoading} className={playing?'pause':''} onClick={()=>changeView({playing:!playing})}>{predictionLoading?'Calcul des estimations…':playing?'Ⅱ Pause':'▶ Lire la journée'}</button><div><b>{timeLabel(minute)}</b><span>{playing?'Lecture en boucle · 48 s / journée':'Déplacez le curseur pour explorer la journée'}</span></div><button className="secondary" disabled={!frame||predictionLoading} onClick={()=>changeView({playing:false,minute:0})}>Recommencer</button></div>
+        <input aria-label="Horaire de la journée" type="range" min="0" max="1435" step="5" value={minute} disabled={!frame||predictionLoading} onChange={e=>changeView({playing:false,minute:Number(e.target.value)})}/>
         <div className="time-ticks">{['00:00','06:00','12:00','18:00','23:55'].map(t=><span key={t}>{t}</span>)}</div>
       </section>
       <div className="workspace-note" aria-live="polite">{error?<span className="error">{error}</span>:!day?'Aucune donnée disponible pour cet étage.':!currentFrame?null:<span>≈ / courbe orange pointillée : valeur interpolée entre deux mesures espacées de {frame.max_gap_minutes ?? 180} min maximum. {estimatedNow} salles interpolées et {missingNow} sans valeur à cet horaire. Les trous longs et les débuts/fins sans mesure restent blancs.</span>}{projectionError&&<span className="error">{projectionError} <button className="secondary retry-projection" onClick={()=>sync.current.refresh()}>Réessayer la projection</button></span>}</div>
@@ -200,9 +213,10 @@ function Dashboard({ session, logout, onBadgeages }) {
 export default function App() {
   const [session, setSession] = useState(() => { try { return JSON.parse(localStorage.getItem('session')); } catch { return null; } });
   const [mode, setMode] = useState('temperatures');
+  const [predictionData, setPredictionData] = useState(null);
   const logout = () => { localStorage.removeItem('session'); setSession(null); setMode('temperatures'); };
   if (!session) return <Auth onAuth={s => { localStorage.setItem('session', JSON.stringify(s)); setSession(s); }} />;
   return mode === 'badgeages'
     ? <BadgeagesDashboard session={session} logout={logout} onTemperatures={() => setMode('temperatures')} />
-    : <Dashboard session={session} logout={logout} onBadgeages={() => setMode('badgeages')} />;
+    : <Dashboard session={session} logout={logout} predictionData={predictionData} onPredictionData={setPredictionData} onClearPredictions={() => setPredictionData(null)} onBadgeages={() => setMode('badgeages')} />;
 }

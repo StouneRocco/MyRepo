@@ -220,11 +220,47 @@ def room_temperatures():
 # Lecture journalière pour l'interface Axel ; les commandes Pi restent inchangées.
 from temperature_day import register_temperature_views
 register_temperature_views(app, temperatures, auth_required)
+from temperature_prediction import register_prediction_views
+register_prediction_views(app, auth_required)
 from badgeage_views import register_badgeage_views
 register_badgeage_views(app, auth_required)
 from view_state import SharedView, register_shared_view
 shared_view = SharedView(users.database['viewer_state'], temperatures, CAMERA_URL, requests)
 register_shared_view(app, shared_view, auth_required)
+
+
+@app.get("/api/openapi.json")
+def openapi_spec():
+    """Expose la spécification OpenAPI utilisée par Swagger UI."""
+    return send_from_directory(os.path.dirname(__file__), "openapi.json", mimetype="application/json")
+
+
+@app.get("/api/docs")
+def swagger_docs():
+    """Interface interactive Swagger UI pour explorer et tester l'API."""
+    return Response("""<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Swagger UI — API Maquette Babas</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+  <style>body{margin:0;background:#fafafa} .topbar{display:none}</style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    window.onload = () => SwaggerUIBundle({
+      url: "/api/openapi.json",
+      dom_id: "#swagger-ui",
+      deepLinking: true,
+      displayRequestDuration: true,
+      persistAuthorization: true
+    });
+  </script>
+</body>
+</html>""", mimetype="text/html")
 
 
 @app.route("/", defaults={"path": ""})

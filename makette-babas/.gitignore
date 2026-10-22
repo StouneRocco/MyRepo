@@ -9,3 +9,4 @@ backend/.jwt_secret
 projector-pi/.projection_calibration.json
 backend/.tls/
 
+ressources/temperature_clean.csv

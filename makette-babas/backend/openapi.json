@@ -1,0 +1,713 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Maquette Babas",
+    "version": "1.0.0",
+    "description": "Documentation de l'API de l'application de calibration, de projection, de consultation des températures et de synchronisation des vues."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Serveur Flask de l'application"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentification",
+      "description": "Création de compte et connexion"
+    },
+    {
+      "name": "Calibration et projection",
+      "description": "Commandes envoyées au récepteur de projection"
+    },
+    {
+      "name": "Températures",
+      "description": "Consultation des mesures de température"
+    },
+    {
+      "name": "Plans et journées",
+      "description": "Données des plans et journées disponibles"
+    },
+    {
+      "name": "Badgeages",
+      "description": "Données de badgeage"
+    },
+    {
+      "name": "Vue partagée",
+      "description": "État de l'interface partagé entre appareils"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Jeton retourné par /api/login ou /api/register. Durée de validité : 12 heures."
+      }
+    },
+    "schemas": {
+      "Credentials": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 32,
+            "example": "utilisateur"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "format": "password",
+            "example": "motdepasse123"
+          }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          }
+        }
+      },
+      "Temperatures": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "number"
+        },
+        "example": {
+          "N301": 21.5,
+          "N302": 22.1
+        }
+      },
+      "RoomProjection": {
+        "type": "object",
+        "required": [
+          "roomId"
+        ],
+        "properties": {
+          "roomId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Identifiant de salle ou null pour la vue globale"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/register": {
+      "post": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "Créer un compte",
+        "description": "Le nom d'utilisateur doit contenir de 3 à 32 caractères et le mot de passe au moins 8 caractères.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Compte créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identifiants invalides"
+          },
+          "409": {
+            "description": "Nom d'utilisateur déjà utilisé"
+          }
+        }
+      }
+    },
+    "/api/login": {
+      "post": {
+        "tags": [
+          "Authentification"
+        ],
+        "summary": "Se connecter",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connexion réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identifiants incorrects"
+          }
+        }
+      }
+    },
+    "/api/calibrate": {
+      "post": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "summary": "Lancer la calibration",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calibration demandée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise"
+          },
+          "502": {
+            "description": "Récepteur de projection indisponible"
+          }
+        }
+      }
+    },
+    "/api/project-room": {
+      "post": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "summary": "Projeter une salle",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomProjection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Commande prise en compte"
+          },
+          "400": {
+            "description": "Salle inconnue ou manquante"
+          },
+          "401": {
+            "description": "Authentification requise"
+          },
+          "502": {
+            "description": "Projection indisponible"
+          }
+        }
+      }
+    },
+    "/api/calibration-settings": {
+      "get": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "summary": "Lire les réglages de calibration",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Réglages de calibration"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "summary": "Mettre à jour les réglages de calibration",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Réglages transmis"
+          },
+          "400": {
+            "description": "Corps JSON invalide"
+          },
+          "401": {
+            "description": "Authentification requise"
+          },
+          "502": {
+            "description": "Réglages indisponibles"
+          }
+        }
+      }
+    },
+    "/api/projection-preview": {
+      "get": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "summary": "Récupérer l'aperçu du projecteur",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image JPEG",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise"
+          },
+          "502": {
+            "description": "Aperçu indisponible"
+          }
+        }
+      }
+    },
+    "/api/project-temperatures": {
+      "post": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "summary": "Envoyer les températures au projecteur",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Accepte un objet code de salle → température, ou un objet contenant temperatures et un contexte facultatif.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Temperatures"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "temperatures"
+                    ],
+                    "properties": {
+                      "temperatures": {
+                        "$ref": "#/components/schemas/Temperatures"
+                      },
+                      "context": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Valeurs transmises"
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Authentification requise"
+          },
+          "502": {
+            "description": "Transmission impossible"
+          }
+        }
+      }
+    },
+    "/api/temperatures/range": {
+      "get": {
+        "tags": [
+          "Températures"
+        ],
+        "summary": "Obtenir la plage temporelle disponible",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Première et dernière mesures",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "minTimestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "maxTimestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      }
+    },
+    "/api/temperatures": {
+      "get": {
+        "tags": [
+          "Températures"
+        ],
+        "summary": "Obtenir les températures proches d'un instant",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": true,
+            "description": "Instant ISO 8601 avec fuseau horaire. Les mesures sont recherchées dans une fenêtre de ±10 minutes.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-10-21T08:00:00Z"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Température par code de salle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Temperatures"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Timestamp invalide"
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      }
+    },
+    "/api/plans": {
+      "get": {
+        "tags": [
+          "Plans et journées"
+        ],
+        "summary": "Lister les plans disponibles",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plans disponibles"
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      }
+    },
+    "/api/days/{floor}": {
+      "get": {
+        "tags": [
+          "Plans et journées"
+        ],
+        "summary": "Lister les journées disponibles pour un étage",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "floor",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 3
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Journées disponibles"
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      }
+    },
+    "/api/day/{floor}/{day}": {
+      "get": {
+        "tags": [
+          "Plans et journées"
+        ],
+        "summary": "Lire les données d'une journée",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "floor",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 3
+            }
+          },
+          {
+            "name": "day",
+            "in": "path",
+            "required": true,
+            "description": "Date au format attendu par l'application",
+            "schema": {
+              "type": "string",
+              "example": "2026-01-15"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Données de la journée"
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      }
+    },
+    "/api/badgeages/days/{floor}": {
+      "get": {
+        "tags": [
+          "Badgeages"
+        ],
+        "summary": "Lister les journées de badgeage",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "floor",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 3
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Journées de badgeage"
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      }
+    },
+    "/api/badgeages/day/{floor}/{day}": {
+      "get": {
+        "tags": [
+          "Badgeages"
+        ],
+        "summary": "Consulter les badgeages d'une journée",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "floor",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 3
+            }
+          },
+          {
+            "name": "day",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "2026-01-15"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Données de badgeage"
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      }
+    },
+    "/api/view-state": {
+      "get": {
+        "tags": [
+          "Vue partagée"
+        ],
+        "summary": "Lire l'état partagé de l'interface",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "État partagé courant"
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Vue partagée"
+        ],
+        "summary": "Mettre à jour l'état partagé de l'interface",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "État partagé mis à jour"
+          },
+          "400": {
+            "description": "État invalide"
+          },
+          "401": {
+            "description": "Authentification requise"
+          }
+        }
+      }
+    }
+  }
+}

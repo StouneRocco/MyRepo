@@ -22,3 +22,61 @@
 @media(min-width:721px) { .thermal-workspace { height:calc(100dvh - 106px); } }
 .calibration-backdrop{position:fixed;inset:0;z-index:20;background:#102e4080;display:grid;place-items:center;padding:18px}.calibration-panel{background:white;border-radius:16px;max-width:700px;width:100%;max-height:92dvh;overflow:auto;padding:24px;display:grid;gap:14px;box-shadow:0 20px 80px #102e4040}.calibration-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.calibration-preview{width:100%;height:240px;background:#233b48;border-radius:10px;touch-action:none}.calibration-preview circle{cursor:grab}.calibration-coordinates{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.calibration-coordinates fieldset{margin:0;padding:10px;border:1px solid #ccdadd;border-radius:8px;min-width:0;display:grid;gap:8px}.calibration-coordinates legend{font-size:12px}.calibration-guide{display:flex;align-items:center;gap:8px}.calibration-guide input{width:18px;height:18px}.calibration-actions{display:flex;gap:8px;flex-wrap:wrap}@media(max-width:600px){.calibration-coordinates{grid-template-columns:repeat(2,1fr)}.calibration-panel{padding:16px}.calibration-preview{height:190px}}
 .calibration-preview{height:auto!important;aspect-ratio:16/9;display:block;overflow:visible}.calibration-preview ellipse{cursor:grab}.calibration-preview ellipse:active{cursor:grabbing}
+
+
+/* Espace de prévision thermique */
+.prediction-page { min-height: 100vh; background: var(--page, #f4f7f8); color: var(--ink, #182b35); }
+.prediction-page > header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px clamp(16px,4vw,48px); background:#fff; border-bottom:1px solid #dce5e8; }
+.prediction-page .header-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.prediction-content { max-width:1200px; margin:0 auto; padding:clamp(18px,4vw,42px); }
+.prediction-intro { max-width:760px; }
+.prediction-intro h1 { font-size:clamp(28px,4vw,42px); line-height:1.1; margin:10px 0 14px; }
+.prediction-intro p, .prediction-footnote { color:#60747d; line-height:1.6; }
+.prediction-controls { display:flex; align-items:end; gap:14px; flex-wrap:wrap; background:#fff; border:1px solid #dce5e8; border-radius:14px; padding:18px; margin:24px 0; }
+.prediction-controls label { display:grid; gap:7px; min-width:200px; font-size:13px; font-weight:650; }
+.prediction-controls select { padding:11px 12px; border:1px solid #cbd8dd; border-radius:8px; background:#fff; color:inherit; }
+.prediction-tabs { display:flex; gap:8px; border-bottom:1px solid #dce5e8; margin-bottom:16px; }
+.prediction-tabs button { background:transparent; color:#526a74; border:0; border-bottom:3px solid transparent; border-radius:0; padding:12px 16px; }
+.prediction-tabs button.active { color:#126d75; border-bottom-color:#16848b; font-weight:700; }
+.prediction-meta { display:flex; gap:10px; flex-wrap:wrap; margin:12px 0; }
+.prediction-meta span { padding:8px 10px; background:#e8f1f2; border-radius:8px; font-size:12px; }
+.prediction-table-wrap { overflow:auto; background:#fff; border:1px solid #dce5e8; border-radius:12px; }
+.prediction-table { width:100%; border-collapse:collapse; font-size:14px; }
+.prediction-table th, .prediction-table td { padding:12px 14px; text-align:left; border-bottom:1px solid #edf1f2; white-space:nowrap; }
+.prediction-table th { background:#f8fafb; color:#526a74; font-size:12px; }
+.prediction-table td small { display:block; margin-top:4px; color:#71848b; font-size:11px; white-space:normal; }
+.prediction-footnote { margin-top:16px; font-size:12px; }
+@media (max-width:650px) { .prediction-page > header { align-items:flex-start; flex-direction:column; } .prediction-content { padding:18px 12px; } .prediction-controls label { min-width:100%; } }
+
+/* Visualisation des profils thermiques prédits */
+.prediction-visuals { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:18px; margin:22px 0; }
+.prediction-panel { min-width:0; padding:18px; border:1px solid #dce5e8; border-radius:14px; background:#fff; }
+.prediction-panel-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.prediction-panel h2 { margin:0 0 5px; font-size:18px; }
+.prediction-panel-heading p,.prediction-chart-note { margin:0; color:#60747d; font-size:12px; line-height:1.5; }
+.prediction-panel .floor-plan { margin-top:12px; }
+.prediction-panel .floor-plan svg { width:100%; height:auto; max-height:480px; }
+.prediction-legend { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:#60747d; flex-wrap:wrap; }
+.prediction-legend i { display:inline-block; width:110px; height:10px; border-radius:5px; background:linear-gradient(90deg,#3b82b8,#f4e9a6,#d94b40); }
+.prediction-legend small { flex-basis:100%; }
+.prediction-room-select { display:grid; gap:6px; margin-top:18px; font-size:12px; font-weight:650; }
+.prediction-room-select select { padding:9px; border:1px solid #cbd8dd; border-radius:8px; background:#fff; }
+.prediction-chart { display:block; width:100%; margin-top:12px; overflow:visible; }
+.prediction-timeline { padding:16px 18px; border:1px solid #dce5e8; border-radius:12px; background:#fff; margin:18px 0; }
+.prediction-timeline label { display:block; margin-bottom:10px; }
+.prediction-timeline input { width:100%; accent-color:#16848b; }
+.prediction-hour-labels { display:flex; justify-content:space-between; color:#60747d; font-size:11px; }
+@media(max-width:850px) { .prediction-visuals { grid-template-columns:1fr; } }
+
+/* Affichage des estimations IA dans l'onglet Températures */
+.prediction-overlay-banner {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .75rem 1rem;
+  margin: 0 1rem 1rem; padding: .9rem 1rem; border: 1px solid #e9b96a;
+  border-left: 4px solid #c77b16; border-radius: 10px; background: #fff8eb;
+  color: #573b16;
+}
+.prediction-overlay-banner strong { white-space: nowrap; }
+.prediction-overlay-banner span { flex: 1 1 260px; font-size: .92rem; }
+.show-predictions-button { margin: .75rem 0 1rem; }
+
+.plan-title-group{display:flex;flex-direction:column;align-items:flex-start;gap:5px}.estimate-status{display:inline-flex;align-items:center;border-radius:5px;padding:3px 8px;background:#fff1d7;color:#8a5100;font-size:11px;font-weight:700;letter-spacing:.2px}.estimate-status.loading{background:#e7f2fb;color:#175d8c}

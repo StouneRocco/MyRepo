@@ -21,6 +21,7 @@ export default function BadgeagesDashboard({ session, logout, onTemperatures }) 
   const [hour, setHour] = useState('all');
   const [frame, setFrame] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [showRoomLabels, setShowRoomLabels] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -100,6 +101,7 @@ export default function BadgeagesDashboard({ session, logout, onTemperatures }) 
             {Array.from({length: 24}, (_, index) => <option key={index} value={index}>{String(index).padStart(2,'0')} h – {String(index).padStart(2,'0')} h 59</option>)}
           </select>
         </label>
+        <label className="heat-switch"><input type="checkbox" checked={showRoomLabels} onChange={event => setShowRoomLabels(event.target.checked)}/> Code et nom des salles</label>
         <div className="projection-state">{loading ? 'Chargement des badgeages…' : `${fmt(total)} badgeages`}</div>
       </div>
       <div className="thermal-body">
@@ -126,7 +128,7 @@ export default function BadgeagesDashboard({ session, logout, onTemperatures }) 
                     onKeyDown={event => { if (['Enter',' '].includes(event.key)) { event.preventDefault(); setSelected(room.id); } }}>
                     <title>{room.code} · {room.name} · {fmt(room.count)} badgeages</title>
                   </polygon>
-                  <text x={x} y={y-font*.2} textAnchor="middle" style={{fontSize: font*.72, pointerEvents: 'none'}}>{room.code}</text>
+                  {showRoomLabels && <><text x={x} y={y-font*1.15} textAnchor="middle" style={{fontSize: font*.68, fontWeight: 700, pointerEvents: 'none'}}>{room.code}</text><text x={x} y={y-font*.42} textAnchor="middle" style={{fontSize: font*.58, pointerEvents: 'none'}}>{room.name}</text></>}
                   <text className="room-temperature" x={x} y={y+font*.8} textAnchor="middle" style={{fontSize: font, pointerEvents: 'none'}}>{fmt(room.count)}</text>
                 </g>;
               })}

@@ -97,6 +97,14 @@ La touche `q` dans une fenêtre OpenCV ferme le récepteur.
 
 Navigateur -> Flask (port 5000, auth JWT, sert le front React) -> color_receiver.py (port 5001, POST /calibrate). Comptes dans MongoDB.
 
+## Documentation Swagger de l'API
+
+Après le démarrage du backend, ouvre **http://localhost:5000/api/docs** pour accéder à
+Swagger UI. La spécification OpenAPI JSON est disponible sur
+**http://localhost:5000/api/openapi.json**. Les routes protégées utilisent un jeton JWT :
+appelle `/api/login`, copie la valeur `token`, puis clique sur **Authorize** dans Swagger
+et saisis le jeton (sans ajouter le préfixe `Bearer`, Swagger le fait automatiquement).
+
 ## Installation (une seule fois, sur le Pi)
 ```bash
 # MongoDB (Docker, image arm64, 64-bit OS requis)
@@ -352,3 +360,35 @@ Après le lancement habituel, connecte-toi puis clique sur **Badgeages** en haut
 Choisis le niveau N3 ou N4, une journée de mars et éventuellement une heure.
 Les données sont agrégées par salle et par heure ; aucun badgeage individuel n'est affiché.
 Si `ressources/badgeages.csv` n'est pas présent, le backend tente de le récupérer automatiquement depuis la branche publique du dépôt GitHub lors du premier accès aux badgeages. Une connexion Internet est donc nécessaire à ce premier chargement.
+
+
+## Prédiction des températures (CSV + API météo)
+
+Une page **Prédictions IA** est disponible depuis la barre supérieure après connexion.
+Elle expose aussi les routes protégées suivantes :
+
+- `GET /api/predictions/temperatures?days=7` : prévisions par salle sur 1 à 14 jours, avec températures météo extérieure.
+- `GET /api/predictions/temperatures?room=CODE_SALLE&days=7` : prévisions d'une salle.
+- `GET /api/predictions/missing-days` : jours absents entre deux dates observées, estimés par interpolation.
+- `GET /api/predictions/missing-days?room=CODE_SALLE` : même analyse pour une salle.
+
+Le modèle lit les mesures depuis `ressources/temperature_clean.xlsx` (le fichier fourni, dont les lignes contiennent le CSV d'origine) et utilise l'API Open-Meteo : archive météo pour entraîner le modèle sur les périodes historiques, prévisions météo pour les dates futures. Le modèle Random Forest est utilisé lorsque suffisamment de données météo/historiques se recouvrent ; sinon une moyenne récente de repli est renvoyée. Les jours interpolés et les prédictions sont étiquetés comme estimations, jamais comme mesures brutes.
+
+### Configuration
+
+Les coordonnées par défaut correspondent à Angers et peuvent être changées avec :
+
+```bash
+WEATHER_LATITUDE=47.4784
+WEATHER_LONGITUDE=-0.5632
+```
+
+Pour utiliser un CSV plutôt que le fichier XLSX inclus, définissez `TEMPERATURE_CSV=/chemin/vers/temperature.csv`. Il doit contenir les colonnes `timestamp,value,room,floor,zone`. Le backend doit avoir accès à Internet pour appeler `https://api.open-meteo.com` et `https://archive-api.open-meteo.com`.
+
+Après mise à jour, installez les dépendances backend depuis `backend/requirements.txt`, puis reconstruisez le frontend :
+
+```bash
+cd frontend && npm install && npm run build
+```
+
+Le premier appel peut être plus lent, car le modèle prépare l'historique et récupère l'archive météo. Le cache mémoire garde le parsing du fichier source en mémoire jusqu'au redémarrage du backend.
