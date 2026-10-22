@@ -95,7 +95,7 @@ function DayChart({ values, estimated, minute }) {
     <text x="34" y="129">00:00</text><text x="306" y="129" textAnchor="end">23:55</text>
   </svg>;
 }
-function Dashboard({ session, logout }) {
+function Dashboard({ session, logout, mode, setMode }) {
   const [plans,setPlans]=useState([]),[floor,setFloor]=useState(3),[days,setDays]=useState([]),[day,setDay]=useState('');
   const [frame,setFrame]=useState(null),[minute,setMinute]=useState(0),[playing,setPlaying]=useState(false);
   const [interpolate,setInterpolate]=useState(true);
@@ -151,7 +151,7 @@ function Dashboard({ session, logout }) {
   const stats=selected?dailySummary(roomValues):overall;
   const current=selected?roomValues[bucket]:overall.mean;
   return <main className="dashboard">
-    <header><div><span className="brand">E /</span><b>ESEO <span className="muted">· Maquette thermique</span></b></div><button className="secondary" onClick={logout}>Déconnexion · {session.username}</button></header>
+    <header><div><span className="brand">E /</span><b>ESEO <span className="muted">· Maquette connectée</span></b></div><nav className="mode-switch" aria-label="Type de données"><button className={mode === "temperatures" ? "" : "secondary"} onClick={() => setMode("temperatures")}>Températures</button><button className={mode === "badgeages" ? "" : "secondary"} onClick={() => setMode("badgeages")}>Badgeages</button></nav><button className="secondary" onClick={logout}>Déconnexion · {session.username}</button></header>
     <section className="thermal-workspace">
       <div className="thermal-controls">
         <label>Étage<select value={floor} onChange={e=>changeView({floor:Number(e.target.value),roomId:null,playing:false})}>{plans.map(p=><option key={p.floor} value={p.floor}>N{p.floor}</option>)}</select></label>
@@ -194,8 +194,146 @@ function Dashboard({ session, logout }) {
     </section>
   </main>;
 }
+
+function badgeageColor(value, maximum) {
+  if (!value) return '#edf2f4';
+  const ratio = Math.min(1, value / Math.max(1, maximum));
+  const start = [223, 241, 239], end = [8, 125, 129];
+  return 'rgb(' + start.map((channel, i) => Math.round(channel + (end[i] - channel) * ratio)).join(',') + ')';
+}
+
+function BadgeagesDashboard({ session, logout, mode, setMode }) {
+  const [plans, setPlans] = useState([]);
+  const [floor, setFloor] = useState(3);
+  const [days, setDays] = useState([]);
+  const [day, setDay] = useState('');
+  const [hour, setHour] = useState('all');
+  const [frame, setFrame] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    api('plans', session.token).then(data => { if (active) setPlans(data); })
+      .catch(err => { if (active) setError(err.message); });
+    return () => { active = false; };
+  }, [session.token]);
+
+  useEffect(() => {
+    let active = true;
+    setDays([]); setDay(''); setFrame(null); setSelected(null); setLoading(true); setError('');
+    api(`badgeages/days/${floor}`, session.token).then(data => {
+      if (!active) return;
+      setDays(data);
+      setDay(data[0] || '');
+      if (!data.length) setError('Aucun badgeage de mars ne correspond aux salles de ce niveau.');
+    }).catch(err => { if (active) setError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [floor, session.token]);
+
+  useEffect(() => {
+    let active = true;
+    setFrame(null); setSelected(null);
+    if (day) api(`badgeages/day/${floor}/${day}`, session.token)
+      .then(data => { if (active) setFrame(data); })
+      .catch(err => { if (active) setError(err.message); });
+    return () => { active = false; };
+  }, [day, floor, session.token]);
+
+  const plan = plans.find(item => item.floor === floor);
+  const rooms = plan?.rooms || [];
+  const roomRows = rooms.map(room => {
+    const source = frame?.rooms?.[room.code];
+    const count = source ? (hour === 'all' ? source.total : source.hours[Number(hour)]) : 0;
+    return { ...room, count, hours: source?.hours || Array(24).fill(0), name: source?.name || room.name };
+  });
+  const maximum = Math.max(1, ...roomRows.map(room => room.count));
+  const selectedRoom = selected ? roomRows.find(room => room.id === selected) : null;
+  const total = hour === 'all' ? frame?.total || 0 : frame?.hourTotals?.[Number(hour)] || 0;
+  const peak = frame ? Math.max(...frame.hourTotals) : 0;
+  const dayTitle = dayLabel(day);
+
+  return <main className="dashboard">
+    <header>
+      <div><span className="brand">E /</span><b>ESEO <span className="muted">· Maquette connectée</span></b></div>
+      <nav className="mode-switch" aria-label="Type de données">
+        <button className={mode === 'temperatures' ? '' : 'secondary'} onClick={() => setMode('temperatures')}>Températures</button>
+        <button className={mode === 'badgeages' ? '' : 'secondary'} onClick={() => setMode('badgeages')}>Badgeages</button>
+      </nav>
+      <button className="secondary" onClick={logout}>Déconnexion · {session.username}</button>
+    </header>
+    <section className="badgeage-workspace">
+      <div className="badgeage-controls">
+        <label>Niveau<select value={floor} onChange={event => setFloor(Number(event.target.value))}><option value={3}>N3</option><option value={4}>N4</option></select></label>
+        <label>Journée de mars<select value={day} disabled={!days.length} onChange={event => setDay(event.target.value)}>{days.map(value => <option key={value} value={value}>{dayLabel(value)}</option>)}</select></label>
+        <label>Affichage horaire<select value={hour} onChange={event => setHour(event.target.value)}><option value="all">Toute la journée</option>{Array.from({length:24}, (_, index) => <option key={index} value={String(index)}>{String(index).padStart(2,'0')}:00 – {String(index).padStart(2,'0')}:59</option>)}</select></label>
+        <div className="badgeage-total"><span>{hour === 'all' ? 'Total de la journée' : 'Badgeages sur cette heure'}</span><strong>{new Intl.NumberFormat('fr-FR').format(total)}</strong></div>
+      </div>
+      <div className="badgeage-body">
+        <section className="badgeage-map-panel">
+          <div className="plan-heading"><h2>Plan N{floor}</h2><span>{dayTitle}{hour === 'all' ? ' · Journée complète' : ` · ${String(hour).padStart(2,'0')} h`}</span></div>
+          <div className="map badgeage-map">
+            {plan && <svg viewBox={plan.bounds.join(' ')} role="group" aria-label={`Badgeages par salle au niveau N${floor}`}>
+              {roomRows.map(room => {
+                const x = room.points.reduce((sum, point) => sum + point[0], 0) / room.points.length;
+                const y = room.points.reduce((sum, point) => sum + point[1], 0) / room.points.length;
+                const width = Math.max(...room.points.map(point => point[0])) - Math.min(...room.points.map(point => point[0]));
+                const height = Math.max(...room.points.map(point => point[1])) - Math.min(...room.points.map(point => point[1]));
+                const font = Math.max(.6, Math.min(width / 5, height / 4, plan.bounds[2] / 70));
+                return <g key={room.id}>
+                  <polygon points={room.points.map(point => point.join(',')).join(' ')}
+                    style={{fill: badgeageColor(room.count, maximum)}}
+                    className={`room ${selected === room.id ? 'selected' : ''}`}
+                    role="button" tabIndex="0" aria-label={`${room.code}, ${room.count} badgeages`}
+                    aria-pressed={selected === room.id}
+                    onClick={() => setSelected(room.id)}
+                    onKeyDown={event => { if (['Enter',' '].includes(event.key)) { event.preventDefault(); setSelected(room.id); } }}>
+                    <title>{room.code} · {room.name} · {room.count} badgeages</title>
+                  </polygon>
+                  <text x={x} y={y-font*.45} style={{fontSize:font*.7}}>{room.code}</text>
+                  <text className="room-temperature" x={x} y={y+font*.6} style={{fontSize:font}}>{room.count}</text>
+                </g>;
+              })}
+              <image href={`/plans/structure/N${floor}.svg`} x="0" y="0" width="800" height="600" preserveAspectRatio="none" pointerEvents="none" aria-hidden="true" />
+            </svg>}
+          </div>
+          <div className="badgeage-legend"><span>0</span><div className="badgeage-gradient"/><span>{maximum} badgeages</span><span className="badgeage-note">Par salle · {hour === 'all' ? 'total journalier' : 'heure sélectionnée'}</span></div>
+        </section>
+        <aside className="badgeage-detail">
+          <span className="eyebrow">{selectedRoom ? 'SALLE SÉLECTIONNÉE' : 'ACTIVITÉ DU NIVEAU'}</span>
+          <h2>{selectedRoom ? selectedRoom.name : `Niveau N${floor}`}</h2>
+          <p>{selectedRoom ? selectedRoom.code : `${rooms.length} salles sur le plan`}</p>
+          <div className="badgeage-stat"><strong>{new Intl.NumberFormat('fr-FR').format(selectedRoom ? selectedRoom.count : total)}</strong><span>{hour === 'all' ? 'badgeages sur la journée' : `badgeages entre ${String(hour).padStart(2,'0')} h et ${String(hour).padStart(2,'0')} h 59`}</span></div>
+          <h3>{selectedRoom ? 'Répartition par heure' : 'Badgeages par heure'}</h3>
+          <div className="hour-bars" aria-label="Histogramme des badgeages par heure">
+            {(selectedRoom ? selectedRoom.hours : frame?.hourTotals || Array(24).fill(0)).map((value, index) =>
+              <div className="hour-bar-item" key={index} title={`${String(index).padStart(2,'0')} h : ${value} badgeages`}>
+                <span className="hour-bar-value">{value || ''}</span>
+                <div className={hour !== 'all' && Number(hour) === index ? 'hour-bar active' : 'hour-bar'}
+                  style={{height: `${Math.max(value ? 4 : 1, value / Math.max(1, selectedRoom ? Math.max(...selectedRoom.hours) : peak) * 100)}%`}}/>
+                <span className="hour-bar-label">{index % 3 === 0 ? String(index).padStart(2,'0') : ''}</span>
+              </div>
+            )}
+          </div>
+          {selectedRoom && <button className="secondary" onClick={() => setSelected(null)}>Voir tout le niveau</button>}
+          <div className="badgeage-summary">
+            <span>Heure la plus active</span><b>{frame && peak ? `${String(frame.hourTotals.indexOf(peak)).padStart(2,'0')} h · ${peak} badgeages` : 'Aucune donnée'}</b>
+          </div>
+        </aside>
+      </div>
+      <div className="workspace-note" aria-live="polite">{error ? <span className="error">{error}</span> : loading ? 'Chargement des dates de mars…' : !frame ? 'Chargement des badgeages…' : 'Données issues du fichier ressources/badgeages.csv. Les dates hors mars sont exclues. Les badgeages sont regroupés par code de salle présent sur le plan N3 ou N4.'}</div>
+    </section>
+  </main>;
+}
+
 export default function App() {
   const [session, setSession] = useState(() => { try { return JSON.parse(localStorage.getItem('session')); } catch { return null; } });
+  const [mode, setMode] = useState('temperatures');
   const logout = () => { localStorage.removeItem('session'); setSession(null); };
-  return session ? <Dashboard session={session} logout={logout} /> : <Auth onAuth={s => { localStorage.setItem('session', JSON.stringify(s)); setSession(s); }} />;
+  if (!session) return <Auth onAuth={s => { localStorage.setItem('session', JSON.stringify(s)); setSession(s); }} />;
+  return mode === 'badgeages'
+    ? <BadgeagesDashboard session={session} logout={logout} mode={mode} setMode={setMode} />
+    : <Dashboard session={session} logout={logout} mode={mode} setMode={setMode} />;
 }
