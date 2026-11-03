@@ -1,0 +1,290 @@
+# =============================================================================
+# IDEs & éditeurs
+# =============================================================================
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.userprefs
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+*.pubxml
+*.pubxml.user
+PublishScripts/
+_UpgradeReport_Files/
+Backup*/
+UpgradeLog*.XML
+UpgradeLog*.htm
+ServiceFabricBackup/
+*.rptproj.bak
+*.vssscc
+*.vspx
+*.vspscc
+
+# VS Code / Cursor
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.code-workspace
+
+# Cursor
+.cursor/
+!.cursor/rules/
+!.cursor/commands/
+
+# JetBrains (Rider, IntelliJ, WebStorm…)
+.idea/
+*.sln.iml
+*.iml
+*.iws
+*.ipr
+out/
+
+# Autres (Sublime, Eclipse, Vim, Emacs…)
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+.metadata/
+nbproject/
+*.nbm
+.emacs.desktop
+.emacs.desktop.lock
+*_flymake.*
+.#*
+.dir-locals.el
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =============================================================================
+# C# / .NET / ASP.NET
+# =============================================================================
+
+# Build
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Aa][Rr]
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]uild/
+[Bb]uilds/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+*.dll
+*.exe
+*.pdb
+*.cache
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+.nuget/
+
+# Test / coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage*.json
+coverage*.xml
+coverage*.info
+TestResult.xml
+nunit-*.xml
+*.VisualState.xml
+TestResult/
+
+# ASP.NET
+wwwroot/lib/
+**/wwwroot/dist/
+appsettings.*.local.json
+appsettings.Local.json
+*.Publish.xml
+publish/
+PublishOutputs/
+
+# Entity Framework
+**/Migrations/*.Designer.cs.bak
+
+# Secrets & config locale
+secrets.json
+*.secret
+*.secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+appsettings.Development.local.json
+
+# =============================================================================
+# Frontend JS (Angular, React, Vue, Next, etc.)
+# =============================================================================
+
+# Dépendances
+node_modules/
+jspm_packages/
+bower_components/
+.pnp/
+.pnp.js
+.yarn/
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Builds / sorties
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+.angular/
+.output/
+.vercel/
+.netlify/
+.firebase/
+.cache/
+.parcel-cache/
+.turbo/
+.vite/
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Tests / coverage frontend
+coverage/
+.nyc_output/
+*.lcov
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+test-results/
+.jest/
+
+# Caches outils
+.eslintcache
+.stylelintcache
+*.stylelintcache
+.prettiercache
+.sass-cache/
+.webpack/
+
+# Angular
+e2e/*.js
+e2e/*.map
+/tmp/
+/out-tsc/
+
+# React / CRA / Vite
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Storybook
+storybook-static/
+
+# =============================================================================
+# Divers projet
+# =============================================================================
+
+# Temporaires & backups
+*.bak
+*.tmp
+*.temp
+*.old
+*.orig
+*~
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Docs générés
+docs/_site/
+site/
