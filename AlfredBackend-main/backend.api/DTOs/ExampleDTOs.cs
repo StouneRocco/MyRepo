@@ -16,6 +16,7 @@
 //
 
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
 
 /**
@@ -28,8 +29,9 @@ namespace Backend.API.DTOs;
 //
 
 public sealed class GetHelloWorldDTO {
-    [FromQuery]
-    [Required(ErrorMessage = "The name is needed !")]
-    [MinLength(1, ErrorMessage = "The name must not be empty !")]
+    [FromQuery(Name = "name")]
+    [Description("Name to include in the greeting response.")]
+    [Required(ErrorMessage = "The name query parameter is required.")]
+    [StringLength(80, MinimumLength = 1, ErrorMessage = "The name must contain between 1 and 80 characters.")]
     public string Name { get; init; } = string.Empty;
 }

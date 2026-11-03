@@ -27,7 +27,8 @@ public class ExampleService: IExampleService {
     public ExempleUser GetExempleUser(string name) {
         return new ExempleUser {
             Id = Guid.NewGuid(),
-            Name = name
+            Name = name,
+            Message = $"Hello, {name}!"
         };
     }
 }

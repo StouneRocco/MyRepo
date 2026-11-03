@@ -288,3 +288,7 @@ storybook-static/
 # Docs générés
 docs/_site/
 site/
+
+# Local application data
+backend.api/App_Data/
+

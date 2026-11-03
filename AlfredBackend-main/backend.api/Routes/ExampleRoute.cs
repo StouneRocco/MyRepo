@@ -13,6 +13,7 @@
 
 using Backend.API.Controllers;
 using Backend.API.DTOs;
+using Backend.Models;
 
 namespace Backend.API.Routes;
 
@@ -49,6 +50,12 @@ public static class ExampleRoutes {
             [AsParameters] GetHelloWorldDTO hw
         ) => {
             return controller.GetHelloWorld(hw);
-        });
+        })
+        .WithName("GetHelloWorld")
+        .WithTags("Example")
+        .WithSummary("Get a personalized greeting")
+        .WithDescription("Returns the provided name and a greeting message personalized for that name.")
+        .Produces<ExempleUser>(StatusCodes.Status200OK)
+        .ProducesValidationProblem();
     }
 }

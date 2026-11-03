@@ -28,6 +28,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDAL();
 builder.Services.AddBLL();
 builder.Services.AddAPI();
+builder.Services.AddValidation();
 
 //
 //  Application
@@ -47,6 +48,8 @@ app.UseHttpsRedirection();
 //
 
 app.MapExampleRoutes();
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
+    .WithTags("Health");
 
 // Adding the SwaggerUI route
 if (app.Environment.IsDevelopment())
