@@ -6,3 +6,4 @@ openpyxl==3.1.5
 tzdata>=2024.1
 scikit-learn
 numpy
+requests

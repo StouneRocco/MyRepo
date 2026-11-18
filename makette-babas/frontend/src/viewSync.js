@@ -1,11 +1,11 @@
 export function createViewSync(request, apply, failure) {
   let pending=0, revision=-1, chain=Promise.resolve();
-  const accept=data=>{if(!pending && data.revision>=revision){revision=data.revision;apply(data);}};
+  const accept=(data, source)=>{if(!pending && data.revision>=revision){revision=data.revision;apply(data,source);}};
   return {
-    async refresh(){try{accept(await request());}catch(error){failure(error);}},
+    async refresh(){try{accept(await request(),'refresh');}catch(error){failure(error);}},
     change(patch){
       pending++;
-      chain=chain.then(()=>request(patch)).then(data=>{pending--;accept(data);},error=>{pending--;failure(error);});
+      chain=chain.then(()=>request(patch)).then(data=>{pending--;accept(data,'change');},error=>{pending--;failure(error);});
       return chain;
     },
   };

@@ -72,6 +72,9 @@ cd ..
 docker compose up -d mongo
 $env:MONGO_DB = 'calibration_app_pc'
 backend/.venv/Scripts/python.exe backend/import_temperatures.py ressources/temperature_clean.xlsx
+# Entraînement initial des modèles de température pour les 3e et 4e étages
+# (salles dont le code commence par 03 ou 04 ; nécessite Internet / Open-Meteo)
+backend/.venv/Scripts/python.exe training/train_models.py
 powershell -ExecutionPolicy Bypass -File ./start-pc.ps1 -Projector
 ```
 
@@ -96,6 +99,22 @@ caméra. Le bouton « Calibrer » règle ensuite le recalage ArUco sur la maquet
 La touche `q` dans une fenêtre OpenCV ferme le récepteur.
 
 Navigateur -> Flask (port 5000, auth JWT, sert le front React) -> color_receiver.py (port 5001, POST /calibrate). Comptes dans MongoDB.
+
+## Entraînement des modèles de température (3e et 4e étages)
+
+L'entraînement est indépendant du démarrage de l'application. Depuis la racine
+du projet, lance :
+
+```powershell
+backend/.venv/Scripts/python.exe training/train_models.py
+```
+
+Le script entraîne uniquement les salles dont le code commence par `03` ou `04`
+(3e et 4e étages). Les salles des autres étages sont ignorées. Les modèles et
+profils horaires sont sauvegardés dans `trained_models/`. L'application charge
+ensuite ces fichiers sans réentraîner les modèles au démarrage. Pour mettre à
+jour les modèles après un nouvel import de températures, relance cette commande.
+Voir `training/README.md` pour les détails.
 
 ## Documentation Swagger de l'API
 
@@ -362,17 +381,77 @@ Les données sont agrégées par salle et par heure ; aucun badgeage individuel 
 Si `ressources/badgeages.csv` n'est pas présent, le backend tente de le récupérer automatiquement depuis la branche publique du dépôt GitHub lors du premier accès aux badgeages. Une connexion Internet est donc nécessaire à ce premier chargement.
 
 
-## Prédiction des températures (CSV + API météo)
+## Prédiction des températures (modèles préentraînés + Open-Meteo)
 
 Une page **Prédictions IA** est disponible depuis la barre supérieure après connexion.
-Elle expose aussi les routes protégées suivantes :
+Les routes protégées principales sont :
 
-- `GET /api/predictions/temperatures?days=7` : prévisions par salle sur 1 à 14 jours, avec températures météo extérieure.
-- `GET /api/predictions/temperatures?room=CODE_SALLE&days=7` : prévisions d'une salle.
+- `GET /api/predictions/temperatures?date=AAAA-MM-JJ` : prédictions pour la journée choisie, par salle.
+- `GET /api/predictions/temperatures?room=CODE_SALLE&date=AAAA-MM-JJ` : prédiction d'une salle.
 - `GET /api/predictions/missing-days` : jours absents entre deux dates observées, estimés par interpolation.
 - `GET /api/predictions/missing-days?room=CODE_SALLE` : même analyse pour une salle.
 
-Le modèle lit les mesures depuis `ressources/temperature_clean.xlsx` (le fichier fourni, dont les lignes contiennent le CSV d'origine) et utilise l'API Open-Meteo : archive météo pour entraîner le modèle sur les périodes historiques, prévisions météo pour les dates futures. Le modèle Random Forest est utilisé lorsque suffisamment de données météo/historiques se recouvrent ; sinon une moyenne récente de repli est renvoyée. Les jours interpolés et les prédictions sont étiquetés comme estimations, jamais comme mesures brutes.
+### Architecture : entraîner séparément, prédire rapidement
+
+L'entraînement est indépendant du lancement de l'application. Les modèles sont conservés
+à la racine dans `trained_models/` et réutilisés à chaque démarrage :
+
+```text
+makette-babas/
+├── training/
+│   ├── train_models.py       # entraînement manuel
+│   └── README.md             # instructions détaillées
+├── trained_models/           # créé après le premier entraînement
+│   ├── manifest.json         # date, versions, métriques et correspondance des salles
+│   ├── rooms/                 # un fichier .joblib par salle entraînée
+│   └── hourly_profiles.json  # profils horaires historiques sauvegardés
+├── backend/
+└── ressources/
+    └── temperature_clean.xlsx
+```
+
+### Lancer ou relancer un entraînement
+
+Depuis la racine du projet, installe d'abord les dépendances backend (voir les instructions
+d'installation plus haut), puis lance :
+
+```powershell
+# Environnement virtuel Windows habituel
+backend/.venv/Scripts/python.exe training/train_models.py
+
+# Ou avec Python disponible dans le PATH
+python training/train_models.py
+```
+
+Le script lit `ressources/temperature_clean.xlsx` par défaut, ou le fichier indiqué par
+`TEMPERATURE_CSV`. Il récupère l'archive météo historique auprès d'Open-Meteo, construit
+les variables météo et calendaires, puis entraîne un Random Forest indépendant pour
+chaque salle ayant au moins 10 journées avec température et météo disponibles.
+Une validation chronologique calcule notamment la MAE en °C sur les journées récentes
+non utilisées pour l'apprentissage final. Les modèles et profils horaires sont ensuite
+sauvegardés dans `trained_models/`. Les fichiers des anciens entraînements sont conservés et le manifeste actif bascule seulement à la fin.
+
+**À refaire** après l'ajout ou la correction de mesures historiques, ou lorsque tu souhaites
+actualiser les modèles. Le script peut être lancé sans démarrer le frontend ni le backend.
+Il nécessite une connexion Internet pour télécharger l'archive Open-Meteo.
+
+### Fonctionnement de l'application
+
+Lorsqu’une prédiction est demandée, le backend charge à la demande les modèles sauvegardés ;
+il ne déclenche aucun entraînement. Si aucun modèle n'a encore été généré, ou si une salle
+n'a pas assez de données, l'application conserve une prédiction de repli par moyenne des
+21 dernières journées disponibles. Le manifeste indique si des modèles préentraînés sont
+présents et leur date d'entraînement.
+
+Pour la météo de la date choisie :
+
+- Date passée ou jour courant : archive météo observée Open-Meteo.
+- Jusqu'à 15 jours dans le futur : prévision Open-Meteo.
+- Au-delà : climatologie historique du même mois (ce n'est pas une prévision météo exacte).
+
+Les températures horaires affichées sont des estimations construites à partir du profil
+horaire historique de chaque salle, recentré sur la température journalière prédite ;
+elles ne constituent pas des mesures ni une prévision horaire directe du Random Forest.
 
 ### Configuration
 
@@ -391,4 +470,4 @@ Après mise à jour, installez les dépendances backend depuis `backend/requirem
 cd frontend && npm install && npm run build
 ```
 
-Le premier appel peut être plus lent, car le modèle prépare l'historique et récupère l'archive météo. Le cache mémoire garde le parsing du fichier source en mémoire jusqu'au redémarrage du backend.
+Le premier entraînement peut prendre du temps puisqu’il lit l’historique et télécharge l’archive météo. Les prédictions suivantes réutilisent les modèles enregistrés ; le cache mémoire conserve également les données historiques et météo pendant la durée de vie du backend. Après un nouvel entraînement, redémarre le backend pour recharger le manifeste et les modèles.

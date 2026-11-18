@@ -10,3 +10,8 @@ projector-pi/.projection_calibration.json
 backend/.tls/
 
 ressources/temperature_clean.csv
+
+# Artefacts générés par training/train_models.py
+trained_models/manifest.json
+trained_models/hourly_profiles.json
+trained_models/rooms/*.joblib

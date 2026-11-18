@@ -105,17 +105,20 @@ function Dashboard({ session, logout, onBadgeages, predictionData, onPredictionD
   const [heatmap,setHeatmap]=useState(true),[selected,setSelected]=useState(null);
   const [showRoomLabels,setShowRoomLabels]=useState(false);
   const [status,setStatus]=useState(null),[error,setError]=useState(''),[projectionError,setProjectionError]=useState('');
-  const sync=useRef(null), plansRef=useRef(plans), view=useRef({floor:3,day:'',minute:0,playing:false,heatmap:true,interpolate:true,roomId:null});
+  const sync=useRef(null), plansRef=useRef(plans), dayChosenByUser=useRef(false), view=useRef({floor:3,day:'',minute:0,playing:false,heatmap:true,interpolate:true,roomId:null});
   plansRef.current=plans;
-  function applyView(data){
-    view.current={...view.current,...data};
-    setFloor(data.floor);setDay(data.day);setMinute(data.minute);setPlaying(data.playing);setHeatmap(data.heatmap);setInterpolate(data.interpolate);
+  function applyView(data, source='change'){
+    // Une date choisie localement est prioritaire sur toute synchronisation distante
+    // (polling ou réponse à une modification provenant d'un autre écran).
+    const nextDay = dayChosenByUser.current && source !== 'local' ? view.current.day : data.day;
+    view.current={...view.current,...data,day:nextDay};
+    setFloor(data.floor);setDay(nextDay);setMinute(data.minute);setPlaying(data.playing);setHeatmap(data.heatmap);setInterpolate(data.interpolate);
     const room=plansRef.current.find(p=>p.floor===data.floor)?.rooms.find(r=>r.id===data.roomId)||null;
     setSelected(previous=>previous?.id===room?.id?previous:room);
     if('available' in data){setStatus(previous=>previous?.available===data.available?previous:{available:data.available});setProjectionError(data.projectionError||'');}
   }
   if(!sync.current)sync.current=createViewSync(body=>api('view-state',session.token,body),applyView,error=>failure(error));
-  function changeView(patch){applyView({...view.current,...patch});sync.current.change(patch);}
+  function changeView(patch){applyView({...view.current,...patch},'local');sync.current.change(patch);}
   const plan=plans.find(p=>p.floor===floor),bucket=Math.floor(minute/5);
   function failure(err) { if(err.status===401) logout(); else setError(err.message); }
   useEffect(()=>{
@@ -162,23 +165,22 @@ function Dashboard({ session, logout, onBadgeages, predictionData, onPredictionD
     const match = plan?.rooms.find(r => r.code === item.room || r.name === item.room || r.id === item.room);
     if (match && Number.isFinite(value)) predictionValues[match.id] = value;
   }
-  const showingPredictions = !!predictionData && Object.keys(predictionValues).length > 0;
+  const showingPredictions = !!predictionData && predictionData.date === day && Object.keys(predictionValues).length > 0;
   const current=selected?(showingPredictions ? predictionValues[selected.id] : roomValues[bucket]):overall.mean;
   return <main className="dashboard">
     <header><div><span className="brand">E /</span><b>ESEO <span className="muted">· Maquette thermique</span></b></div><div className="header-actions"><button className="secondary" onClick={onBadgeages}>Badgeages</button><AppDisplay/><button className="secondary" onClick={logout}>Déconnexion · {session.username}</button></div></header>
     <section className="thermal-workspace">
       <div className="thermal-controls">
         <label>Étage<select value={floor} onChange={e=>changeView({floor:Number(e.target.value),roomId:null,playing:false})}>{plans.map(p=><option key={p.floor} value={p.floor}>N{p.floor}</option>)}</select></label>
-        <label>Journée<input type="date" value={day} onChange={async e=>{const chosen=e.target.value;if(!chosen)return;changeView({day:chosen,minute:0,playing:false});setError('');setPredictionLoading(false);if(days.includes(chosen)){onPredictionData(null);return;}setPredictionLoading(true);setError('Calcul des estimations en cours…');onPredictionData(null);try{const result=await api(`predictions/temperatures?${new URLSearchParams({date:chosen})}`,session.token);onPredictionData({...result,date:chosen});setError('');}catch(err){setError(err.message||'Impossible de calculer cette journée.');}finally{setPredictionLoading(false);}}}/></label>
+        <label>Journée<input type="date" value={day} onChange={async e=>{const chosen=e.target.value;if(!chosen)return;dayChosenByUser.current=true;changeView({day:chosen,minute:0,playing:false});setError('');setPredictionLoading(false);if(days.includes(chosen)){onPredictionData(null);return;}setPredictionLoading(true);setError('Calcul des estimations en cours…');onPredictionData(null);try{const result=await api(`predictions/temperatures?${new URLSearchParams({date:chosen})}`,session.token);onPredictionData({...result,date:chosen});setError('');}catch(err){setError(err.message||'Impossible de calculer cette journée.');}finally{setPredictionLoading(false);}}}/></label>
         <label className="heat-switch"><input type="checkbox" checked={heatmap} onChange={e=>changeView({heatmap:e.target.checked})}/> Heatmap</label>
         <label className="heat-switch"><input type="checkbox" checked={interpolate} onChange={e=>changeView({interpolate:e.target.checked})}/> Combler les trous</label>
         <label className="heat-switch"><input type="checkbox" checked={showRoomLabels} onChange={e=>setShowRoomLabels(e.target.checked)}/> Code et nom des salles</label>
         <div className="projection-state"><span className={`status-dot ${status?.available?'online':''}`}/>{floor!==3?'N4 en consultation · projection N3 uniquement':status?.available?'Projecteur joignable':status?'Projecteur indisponible':'Connexion au projecteur…'}</div>
         <ProjectionCalibration token={session.token} request={(path, body) => api(path, session.token, body)} onSuccess={() => setStatus({available:true})}/>
       </div>
-      {showingPredictions && <div className="prediction-overlay-banner"><strong>Mode estimation IA · {dayLabel(predictionData.date)}</strong><span>Le plan affiche les températures prédites à {String(predictionHour).padStart(2, '0')} h. Les valeurs prédites sont distinctes des mesures réelles.</span><button className="secondary" onClick={onClearPredictions}>Quitter les estimations</button></div>}
       <div className="thermal-body">
-        <section className="plan-view"><div className="plan-heading"><div className="plan-title-group"><h2>Plan N{floor}</h2>{(predictionLoading || (predictionData?.date===day && predictionData?.predictions?.length>0)) && <span className={`estimate-status ${predictionLoading?'loading':''}`} aria-live="polite">{predictionLoading?'Estimations en cours…':'Estimations'}</span>}</div><span>{dayLabel(day)} · {timeLabel(minute)}</span></div>
+        <section className="plan-view"><div className="plan-heading"><div className="plan-title-group"><h2>Plan N{floor}</h2></div><span>{dayLabel(day)} · {timeLabel(minute)}</span></div>
           <div className="map">{plan&&<svg viewBox={plan.bounds.join(' ')} role="group" aria-label={`Heatmap des salles de N${floor}`}>
             {plan.rooms.map(room=>{
               const value=showingPredictions ? (predictionValues[room.id] ?? null) : (series?.[room.id]?.[bucket]??null);

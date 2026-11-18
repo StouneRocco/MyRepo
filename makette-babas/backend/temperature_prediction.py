@@ -2,6 +2,7 @@
 import datetime as dt
 import math
 import os
+import json
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
@@ -15,6 +16,52 @@ PARIS = ZoneInfo("Europe/Paris")
 LAT = float(os.getenv("WEATHER_LATITUDE", "47.4784"))
 LON = float(os.getenv("WEATHER_LONGITUDE", "-0.5632"))
 WEATHER_TIMEOUT = 10
+MODEL_DIR = ROOT / "trained_models"
+WEATHER_CACHE_DIR = MODEL_DIR / "weather_cache"
+
+@lru_cache(maxsize=1)
+def model_manifest():
+    """Charge le manifeste des modèles préentraînés, sans lancer d'entraînement."""
+    path = MODEL_DIR / "manifest.json"
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+@lru_cache(maxsize=128)
+def load_room_model(room):
+    """Charge paresseusement le modèle sauvegardé pour une salle."""
+    entry = model_manifest().get("rooms", {}).get(room)
+    if not entry:
+        return None
+    path = MODEL_DIR / entry.get("file", "")
+    if not path.is_file():
+        return None
+    try:
+        import joblib
+        return joblib.load(path)
+    except Exception:
+        return None
+
+def preload_room_models():
+    """Charge tous les modèles déclarés au démarrage du backend."""
+    for room in model_manifest().get("rooms", {}):
+        load_room_model(room)
+
+
+@lru_cache(maxsize=1)
+def saved_hourly_profiles():
+    path = MODEL_DIR / "hourly_profiles.json"
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return {room: {int(hour): float(value) for hour, value in profile.items()}
+                for room, profile in raw.items()}
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return {}
 
 @lru_cache(maxsize=1)
 def historical_daily():
@@ -43,8 +90,19 @@ def historical_daily():
         raise RuntimeError(f"Aucune mesure valide dans {source.name}.")
     return dict(result)
 
-@lru_cache(maxsize=32)
 def weather_daily(start, end, forecast=False):
+    """Récupère une plage météo et la conserve durablement sur disque."""
+    endpoint = "forecast" if forecast else "archive"
+    cache_key = f"{endpoint}_{LAT}_{LON}_{start}_{end}".replace("/", "_")
+    cache_path = WEATHER_CACHE_DIR / f"{cache_key}.json"
+    if cache_path.is_file():
+        try:
+            # Les prévisions évoluent : cache de 6 h. L'archive observée est stable.
+            fresh = not forecast or (dt.datetime.now().timestamp() - cache_path.stat().st_mtime < 6 * 3600)
+            if fresh:
+                return json.loads(cache_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
     base = "https://api.open-meteo.com/v1/forecast" if forecast else "https://archive-api.open-meteo.com/v1/archive"
     params = {"latitude": LAT, "longitude": LON, "start_date": start, "end_date": end,
               "daily": "temperature_2m_mean,temperature_2m_max,temperature_2m_min", "timezone": "Europe/Paris"}
@@ -53,7 +111,12 @@ def weather_daily(start, end, forecast=False):
     daily = response.json().get("daily") or {}
     dates = daily.get("time") or []
     cols = [daily.get("temperature_2m_mean", []), daily.get("temperature_2m_max", []), daily.get("temperature_2m_min", [])]
-    return {day: [col[i] if i < len(col) else None for col in cols] for i, day in enumerate(dates)}
+    result = {day: [col[i] if i < len(col) else None for col in cols] for i, day in enumerate(dates)}
+    WEATHER_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = cache_path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(result), encoding="utf-8")
+    os.replace(tmp, cache_path)
+    return result
 
 def features(day, weather):
     date = dt.date.fromisoformat(day)
@@ -65,23 +128,21 @@ def features(day, weather):
             math.sin(2 * math.pi * date.timetuple().tm_yday / 365.25),
             math.cos(2 * math.pi * date.timetuple().tm_yday / 365.25)]
 
-def predict_one(series, weather, target):
-    history = [(day, value) for day, value in series.items() if day in weather and all(v is not None for v in weather[day])]
-    if len(history) < 10:
-        values = [value for _, value in sorted(series.items())]
-        return round(sum(values[-min(21, len(values)):]) / min(21, len(values)), 2) if values else None
-    try:
-        import numpy as np
-        from sklearn.ensemble import RandomForestRegressor
-        X = np.asarray([features(day, weather) for day, _ in history], dtype=float)
-        y = np.asarray([value for _, value in history], dtype=float)
-        model = RandomForestRegressor(n_estimators=35, max_depth=6, min_samples_leaf=3,
-                                      random_state=42, n_jobs=-1)
-        model.fit(X, y)
-        return round(float(model.predict(np.asarray([features(target, weather)], dtype=float))[0]), 2)
-    except ImportError:
-        vals = [value for _, value in sorted(series.items())]
-        return round(sum(vals[-min(21, len(vals)):]) / min(21, len(vals)), 2) if vals else None
+def predict_one(series, weather, target, room=None):
+    """Prédit avec le modèle préentraîné ; moyenne récente si aucun modèle n'existe."""
+    model = load_room_model(room) if room else None
+    if model is not None:
+        try:
+            import numpy as np
+            return round(float(model.predict(np.asarray([features(target, weather)], dtype=float))[0]), 2)
+        except Exception:
+            # Un modèle incompatible/corrompu ne doit pas empêcher la consultation.
+            pass
+    values = [value for _, value in sorted(series.items())]
+    if not values:
+        return None
+    window = min(21, len(values))
+    return round(sum(values[-window:]) / window, 2)
 
 def weather_for_target(target_date, today):
     target = dt.date.fromisoformat(target_date)
@@ -89,16 +150,11 @@ def weather_for_target(target_date, today):
         return weather_daily(target_date, target_date, False), "archive météo observée"
     if target <= today + dt.timedelta(days=15):
         return weather_daily(target_date, target_date, True), "prévision météo Open-Meteo"
-    # Open-Meteo ne prédit pas la météo à plusieurs mois : climatologie du même mois, sur 5 ans.
-    end = today - dt.timedelta(days=6)
-    start = end - dt.timedelta(days=5 * 365)
-    archive = weather_daily(start.isoformat(), end.isoformat(), False)
-    month_rows = [row for day, row in archive.items() if dt.date.fromisoformat(day).month == target.month
-                  and all(value is not None for value in row)]
-    if not month_rows:
-        return {target_date: [12.0, 16.0, 8.0]}, "estimation météo saisonnière de repli"
-    mean = [round(sum(row[i] for row in month_rows) / len(month_rows), 2) for i in range(3)]
-    return {target_date: mean}, "climatologie mensuelle Open-Meteo (pas une prévision météo exacte)"
+    climate = model_manifest().get("monthly_weather", {}).get(str(target.month))
+    if climate:
+        return {target_date: climate}, "climatologie mensuelle sauvegardée (pas une prévision exacte)"
+    return {target_date: [12.0, 16.0, 8.0]}, "estimation météo saisonnière de repli"
+
 
 @lru_cache(maxsize=1)
 def historical_hourly_offsets():
@@ -141,7 +197,7 @@ def hourly_estimate(room, daily_temperature):
     """Construit 24 estimations horaires à partir du profil observé de la salle."""
     if daily_temperature is None:
         return []
-    profile = historical_hourly_offsets().get(room, {})
+    profile = saved_hourly_profiles().get(room, {})
     # Profil neutre si les historiques n'ont pas de mesures intra-journalières.
     offsets = [profile.get(hour, 0.0) for hour in range(24)]
     # Centrer le profil afin que sa moyenne ne déplace pas la prédiction journalière.
@@ -159,29 +215,31 @@ def register_prediction_views(app, auth_required):
         if not target:
             target = dt.datetime.now(PARIS).date().isoformat()
         try:
-            target_date = dt.date.fromisoformat(target)
-            history = historical_daily()
-            if room and room not in history:
-                return jsonify(error="Salle inconnue ou absente du fichier source."), 404
+            dt.date.fromisoformat(target)
+            manifest = model_manifest()
+            rooms = manifest.get("rooms", {})
+            if room and room not in rooms:
+                return jsonify(error="Salle inconnue ou sans modèle entraîné (étages 03/04)."), 404
+            if not rooms:
+                return jsonify(error="Aucun modèle entraîné. Lance training/train_models.py avant les prédictions."), 503
             today = dt.datetime.now(PARIS).date()
-            # Uniquement la plage historique présente dans le fichier (généralement janvier-juin).
-            all_days = [day for values in history.values() for day in values]
-            first, last = min(all_days), max(all_days)
-            weather_hist = weather_daily(first, last, False)
             weather_target, weather_mode = weather_for_target(target, today)
-            weather_all = {**weather_hist, **weather_target}
-            selected = {room: history[room]} if room else history
+            selected = {room: rooms[room]} if room else rooms
             output = []
-            for room_name, values in selected.items():
-                temp = predict_one(values, weather_all, target)
+            for room_name in selected:
+                temp = predict_one({}, weather_target, target, room_name)
                 w = weather_target.get(target, [None, None, None])
                 output.append({"room": room_name, "date": target, "temperature": temp, "type": "prediction",
                                "hourly": hourly_estimate(room_name, temp),
                                "weather": {"mean": w[0], "max": w[1], "min": w[2]}})
-            return jsonify({"source": "fichier historique fourni + API météo Open-Meteo",
-                            "model": "Random Forest par salle (entraînement limité à l'historique local)",
-                            "hourly_method": "Profil horaire historique par salle, recentré sur la moyenne journalière prédite. Valeurs horaires estimées, non mesurées.",
-                            "weather_mode": weather_mode, "history_start": first, "history_end": last,
+            return jsonify({"source": "modèles préentraînés + météo Open-Meteo",
+                            "model": "Random Forest préentraîné par salle",
+                            "training": {"available": True, "trained_at": manifest.get("trained_at"),
+                                         "model_version": manifest.get("version")},
+                            "hourly_method": "Profil horaire historique sauvegardé et recentré sur la moyenne journalière prédite. Valeurs estimées, non mesurées.",
+                            "weather_mode": weather_mode,
+                            "history_start": manifest.get("history_start"),
+                            "history_end": manifest.get("history_end"),
                             "predictions": output})
         except (ValueError, requests.RequestException, RuntimeError) as exc:
             return jsonify(error=f"Prévision indisponible : {exc}"), 502
