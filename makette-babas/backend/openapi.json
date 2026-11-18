@@ -1,0 +1,1571 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Maquette ESEO — API locale",
+    "version": "1.0.0",
+    "description": "API de consultation des températures et des badgeages, de synchronisation des appareils et de calibration/projection. Se connecter avec POST /api/login, puis utiliser le jeton JWT avec Authorize. Les POST protégés nécessitent un rôle operator ou admin."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Serveur actuel, HTTP ou HTTPS"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Connexion",
+      "description": "Connexion et création de comptes."
+    },
+    {
+      "name": "Températures",
+      "description": "Mesures par salle, jours disponibles et séries de cinq minutes."
+    },
+    {
+      "name": "Présences",
+      "description": "Comptage des badgeages : passages enregistrés, pas personnes présentes."
+    },
+    {
+      "name": "Vue partagée",
+      "description": "Mode, date, heure et sélection communs à tous les appareils ; projection physique N3."
+    },
+    {
+      "name": "Calibration et projection",
+      "description": "Calibration caméra/projecteur et aperçu. Les commandes manuelles historiques sont ignorées quand le pilote partagé est actif."
+    },
+    {
+      "name": "Documentation"
+    }
+  ],
+  "paths": {
+    "/api/config": {
+      "get": {
+        "tags": [
+          "Connexion"
+        ],
+        "operationId": "getConfig",
+        "summary": "État de l'ouverture des inscriptions",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Configuration publique",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "registrationOpen"
+                  ],
+                  "properties": {
+                    "registrationOpen": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/login": {
+      "post": {
+        "tags": [
+          "Connexion"
+        ],
+        "operationId": "login",
+        "summary": "Se connecter et recevoir un jeton JWT",
+        "security": [],
+        "description": "Jeton valable 12 heures. Dans Swagger, une connexion réussie applique automatiquement le jeton. Les mots de passe et le jeton ne sont pas conservés après rechargement de cette page.",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Credentials"
+        },
+        "responses": {
+          "200": {
+            "description": "Connexion réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/register": {
+      "post": {
+        "tags": [
+          "Connexion"
+        ],
+        "operationId": "register",
+        "summary": "Créer un compte si les inscriptions sont ouvertes",
+        "security": [],
+        "description": "Le premier compte devient operator. Les comptes suivants sont viewer. Les inscriptions sont fermées après le premier compte sauf configuration ALLOW_REGISTRATION.",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Credentials"
+        },
+        "responses": {
+          "201": {
+            "description": "Compte créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/plans": {
+      "get": {
+        "tags": [
+          "Températures"
+        ],
+        "operationId": "getPlans",
+        "summary": "Catalogue des plans N3/N4 et des salles",
+        "responses": {
+          "200": {
+            "description": "Plans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Plan"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/days/{floor}": {
+      "get": {
+        "tags": [
+          "Températures"
+        ],
+        "operationId": "getTemperatureDays",
+        "summary": "Journées avec mesures pour un étage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Floor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dates locales triées, Europe/Paris",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Days"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/day/{floor}/{day}": {
+      "get": {
+        "tags": [
+          "Températures"
+        ],
+        "operationId": "getTemperatureDay",
+        "summary": "Séries thermiques d'une journée",
+        "description": "288 créneaux de cinq minutes par identifiant de salle. Null indique une absence de valeur. Les séries interpolées et leurs marqueurs sont distincts des mesures d'origine. Une journée sans mesure peut renvoyer des séries entièrement nulles.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Floor"
+          },
+          {
+            "$ref": "#/components/parameters/Day"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trame journalière",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemperatureDay"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/temperatures/range": {
+      "get": {
+        "tags": [
+          "Températures"
+        ],
+        "operationId": "getTemperatureRange",
+        "summary": "Première et dernière dates de mesure de la base",
+        "responses": {
+          "200": {
+            "description": "Bornes UTC, null si base vide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "minTimestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "maxTimestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/temperatures": {
+      "get": {
+        "tags": [
+          "Températures"
+        ],
+        "operationId": "getTemperaturesAt",
+        "summary": "Mesure la plus proche d'un instant, par code de salle",
+        "description": "Recherche dans une fenêtre de ±10 minutes. Les salles sans mesure dans cette fenêtre sont absentes du dictionnaire.",
+        "parameters": [
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "example": "2026-05-15T12:00:00+02:00"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Code de salle → température en °C",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomValues"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/badgeages/days/{floor}": {
+      "get": {
+        "tags": [
+          "Présences"
+        ],
+        "operationId": "getPresenceDays",
+        "summary": "Journées avec badgeages pour un étage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Floor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dates locales triées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Days"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/badgeages/day/{floor}/{day}": {
+      "get": {
+        "tags": [
+          "Présences"
+        ],
+        "operationId": "getPresenceDay",
+        "summary": "Badgeages par salle et par heure",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Floor"
+          },
+          {
+            "$ref": "#/components/parameters/Day"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Une journée de passages enregistrés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresenceDay"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/view-state": {
+      "get": {
+        "tags": [
+          "Vue partagée"
+        ],
+        "operationId": "getViewState",
+        "summary": "Lire la vue et l'état du projecteur",
+        "description": "La consultation active le pilote partagé ; elle ne réinitialise pas les filtres ni la lecture.",
+        "responses": {
+          "200": {
+            "description": "Vue partagée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewState"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Vue partagée"
+        ],
+        "operationId": "updateViewState",
+        "summary": "Modifier la vue commune et la projection",
+        "description": "Patch partiel non vide. Opérateur/admin requis. Présence : minute multiple de 60. Températures : multiple de 5. Le passage à la présence arrondit l'heure et arrête la lecture. La projection physique reste N3 même pendant la consultation N4.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewPatch"
+              },
+              "example": {
+                "metric": "presence",
+                "floor": 3,
+                "day": "2026-03-10",
+                "minute": 840,
+                "playing": false,
+                "roomId": null
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vue enregistrée, révision incrémentée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewState"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
+    "/api/projection-retry": {
+      "post": {
+        "tags": [
+          "Vue partagée"
+        ],
+        "operationId": "retryProjection",
+        "summary": "Demander un nouvel envoi au projecteur",
+        "description": "Opérateur/admin requis. La réponse confirme la demande, pas la réussite du rendu : consulter ensuite view-state.",
+        "responses": {
+          "202": {
+            "description": "Nouvel essai demandé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "retry-requested"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/calibrate": {
+      "post": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "operationId": "calibrate",
+        "summary": "Déclencher la calibration automatique",
+        "description": "Opérateur/admin requis. Le récepteur déclenche la recherche des repères ArUco ; une réponse ok ne signifie pas que les quatre repères ont déjà été détectés.",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Ok"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "502": {
+            "$ref": "#/components/responses/ProjectorUnavailable"
+          }
+        }
+      }
+    },
+    "/api/calibration-settings": {
+      "get": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "operationId": "getCalibrationSettings",
+        "summary": "Lire les coins, le mode et la révision de calibration",
+        "responses": {
+          "200": {
+            "description": "Calibration actuelle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Calibration"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/ProjectorUnavailable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "operationId": "updateCalibrationSettings",
+        "summary": "Ajuster la calibration manuelle ou repartir de l'automatique",
+        "description": "Opérateur/admin requis. Les coins encadrent le plan : haut gauche, haut droit, bas droit, bas gauche. Ils doivent former un quadrilatère convexe. persist=false applique l'ajustement en direct ; persist=true sauvegarde. expectedRevision protège contre une calibration modifiée ailleurs. showGuide=false retire le plan après l'ajustement.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CalibrationWrite"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CalibrationAction"
+                  }
+                ]
+              },
+              "examples": {
+                "adjust": {
+                  "summary": "Reprendre la calibration automatique pour l'ajuster",
+                  "value": {
+                    "action": "adjust-automatic"
+                  }
+                },
+                "resume": {
+                  "summary": "Revenir à la calibration automatique",
+                  "value": {
+                    "action": "resume-automatic"
+                  }
+                },
+                "manual": {
+                  "summary": "Exemple de réglage manuel, sans sauvegarde",
+                  "value": {
+                    "mode": "manual",
+                    "corners": [
+                      [
+                        0,
+                        0
+                      ],
+                      [
+                        1,
+                        0
+                      ],
+                      [
+                        1,
+                        1
+                      ],
+                      [
+                        0,
+                        1
+                      ]
+                    ],
+                    "showGuide": true,
+                    "persist": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Calibration appliquée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Calibration"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/SaveFailure"
+          },
+          "502": {
+            "$ref": "#/components/responses/ProjectorUnavailable"
+          }
+        }
+      }
+    },
+    "/api/projection-preview": {
+      "get": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "operationId": "getProjectionPreview",
+        "summary": "Image JPEG du rendu du projecteur",
+        "responses": {
+          "200": {
+            "description": "Image et réglages utilisés",
+            "headers": {
+              "X-Calibration-Settings": {
+                "description": "Réglages de calibration sérialisés en JSON",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "502": {
+            "$ref": "#/components/responses/ProjectorUnavailable"
+          }
+        }
+      }
+    },
+    "/api/project-room": {
+      "post": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "operationId": "projectRoom",
+        "summary": "Commande historique de sélection d'une salle",
+        "description": "Préférer POST /api/view-state pour synchroniser les appareils. Quand le pilote partagé est actif, cette route ne modifie pas la projection et renvoie la sélection partagée. Opérateur/admin requis.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "roomId"
+                ],
+                "properties": {
+                  "roomId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "example": {
+                  "roomId": null
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sélection appliquée ou vue partagée conservée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "shared-view"
+                      ]
+                    },
+                    "roomId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "502": {
+            "$ref": "#/components/responses/ProjectorUnavailable"
+          }
+        }
+      }
+    },
+    "/api/project-temperatures": {
+      "post": {
+        "tags": [
+          "Calibration et projection"
+        ],
+        "operationId": "projectTemperatures",
+        "summary": "Commande historique d'envoi de températures N3",
+        "description": "Préférer POST /api/view-state pour le pilotage partagé, notamment les présences. Cette commande est ignorée si le pilote partagé est actif. Opérateur/admin requis.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/RoomValues"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "temperatures"
+                    ],
+                    "properties": {
+                      "temperatures": {
+                        "$ref": "#/components/schemas/RoomValues"
+                      },
+                      "context": {
+                        "$ref": "#/components/schemas/ProjectionContext"
+                      }
+                    }
+                  }
+                ]
+              },
+              "example": {
+                "temperatures": {},
+                "context": {
+                  "day": "2026-05-15",
+                  "minute": 840
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Données transmises ou pilote partagé conservé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "shared-view"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "502": {
+            "$ref": "#/components/responses/ProjectorUnavailable"
+          }
+        }
+      }
+    },
+    "/api/docs": {
+      "get": {
+        "tags": [
+          "Documentation"
+        ],
+        "operationId": "getSwaggerDocs",
+        "summary": "Documentation Swagger interactive",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Interface Swagger UI locale",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openapi.json": {
+      "get": {
+        "tags": [
+          "Documentation"
+        ],
+        "operationId": "getOpenapi",
+        "summary": "Spécification OpenAPI de cette API",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Contrat OpenAPI 3.0.3",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Coller le token renvoyé par /api/login, sans le préfixe Bearer."
+      }
+    },
+    "parameters": {
+      "Floor": {
+        "name": "floor",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "enum": [
+            3,
+            4
+          ]
+        },
+        "example": 3
+      },
+      "Day": {
+        "name": "day",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "date"
+        },
+        "example": "2026-03-10"
+      }
+    },
+    "requestBodies": {
+      "Credentials": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Credentials"
+            },
+            "example": {
+              "username": "votre_identifiant",
+              "password": "votre_mot_de_passe"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Ok": {
+        "description": "Commande acceptée",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "ok"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Invalid": {
+        "description": "Paramètres ou corps invalides",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Jeton manquant, expiré, révoqué ou compte désactivé",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Droit opérateur/admin requis, ou inscriptions fermées",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Étage inconnu ou journée de badgeages absente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Identifiant déjà utilisé, révision de calibration périmée ou calibration automatique non disponible",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unavailable": {
+        "description": "Base MongoDB ou fichier de données indisponible",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ProjectorUnavailable": {
+        "description": "Récepteur de projection indisponible ou réponse invalide",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "SaveFailure": {
+        "description": "Impossible de sauvegarder la calibration",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimit": {
+        "description": "Trop de tentatives de connexion/création de compte",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer",
+              "example": 60
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Credentials": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 32
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "maxLength": 256
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "required": [
+          "token",
+          "username",
+          "role"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "viewer",
+              "operator",
+              "admin"
+            ]
+          }
+        }
+      },
+      "Days": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "Point": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "Room": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "03-23-N"
+          },
+          "name": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            }
+          }
+        }
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "floor": {
+            "type": "integer",
+            "enum": [
+              3,
+              4
+            ]
+          },
+          "bounds": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "rooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Room"
+            }
+          }
+        }
+      },
+      "RoomValues": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "number"
+        },
+        "description": "Code de salle → nombre fini ; les codes doivent appartenir au catalogue concerné."
+      },
+      "TemperatureSeries": {
+        "type": "array",
+        "minItems": 288,
+        "maxItems": 288,
+        "items": {
+          "type": "number",
+          "nullable": true
+        }
+      },
+      "TemperatureDay": {
+        "type": "object",
+        "properties": {
+          "floor": {
+            "type": "integer"
+          },
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "step_minutes": {
+            "type": "integer",
+            "enum": [
+              5
+            ]
+          },
+          "series": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TemperatureSeries"
+            }
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "interpolated_series": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TemperatureSeries"
+            }
+          },
+          "estimated": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "minItems": 288,
+              "maxItems": 288,
+              "items": {
+                "type": "boolean"
+              }
+            }
+          },
+          "max_gap_minutes": {
+            "type": "integer"
+          },
+          "invalid_minutes": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "aggregation": {
+            "type": "string"
+          }
+        }
+      },
+      "Hours": {
+        "type": "array",
+        "minItems": 24,
+        "maxItems": 24,
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "PresenceDay": {
+        "type": "object",
+        "properties": {
+          "floor": {
+            "type": "integer"
+          },
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hourTotals": {
+            "$ref": "#/components/schemas/Hours"
+          },
+          "rooms": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "hours": {
+                  "$ref": "#/components/schemas/Hours"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ViewPatch": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "floor": {
+            "type": "integer",
+            "enum": [
+              3,
+              4
+            ]
+          },
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "minute": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1435,
+            "multipleOf": 5,
+            "description": "Minutes depuis minuit ; multiple de 60 en présence."
+          },
+          "playing": {
+            "type": "boolean"
+          },
+          "heatmap": {
+            "type": "boolean"
+          },
+          "interpolate": {
+            "type": "boolean"
+          },
+          "roomId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Identifiant du plan, pas le code de salle."
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "temperatures",
+              "presence"
+            ]
+          }
+        }
+      },
+      "ViewState": {
+        "type": "object",
+        "properties": {
+          "floor": {
+            "type": "integer"
+          },
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "minute": {
+            "type": "integer"
+          },
+          "playing": {
+            "type": "boolean"
+          },
+          "heatmap": {
+            "type": "boolean"
+          },
+          "interpolate": {
+            "type": "boolean"
+          },
+          "roomId": {
+            "type": "string",
+            "nullable": true
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "temperatures",
+              "presence"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "projectionError": {
+            "type": "string",
+            "nullable": true
+          },
+          "receiverStatus": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          }
+        }
+      },
+      "Corners": {
+        "type": "array",
+        "minItems": 4,
+        "maxItems": 4,
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number",
+            "minimum": -0.5,
+            "maximum": 1.5
+          }
+        },
+        "description": "Coordonnées normalisées du plan : haut gauche, haut droit, bas droit, bas gauche. Quadrilatère convexe."
+      },
+      "CalibrationWrite": {
+        "type": "object",
+        "required": [
+          "mode",
+          "corners",
+          "showGuide"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "manual"
+            ]
+          },
+          "corners": {
+            "$ref": "#/components/schemas/Corners"
+          },
+          "showGuide": {
+            "type": "boolean"
+          },
+          "sourceCorners": {
+            "$ref": "#/components/schemas/Corners"
+          },
+          "initialCorners": {
+            "$ref": "#/components/schemas/Corners"
+          },
+          "persist": {
+            "type": "boolean",
+            "default": true
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CalibrationAction": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "adjust-automatic",
+              "resume-automatic"
+            ]
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Calibration": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "manual"
+            ]
+          },
+          "corners": {
+            "$ref": "#/components/schemas/Corners"
+          },
+          "showGuide": {
+            "type": "boolean"
+          },
+          "sourceCorners": {
+            "$ref": "#/components/schemas/Corners"
+          },
+          "initialCorners": {
+            "$ref": "#/components/schemas/Corners"
+          },
+          "planCorners": {
+            "$ref": "#/components/schemas/Corners"
+          },
+          "automaticReady": {
+            "type": "boolean"
+          },
+          "settingsRevision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ProjectionContext": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "minute": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "temperatures",
+              "presence"
+            ]
+          },
+          "scaleMax": {
+            "type": "number",
+            "minimum": 0
+          },
+          "dataAvailable": {
+            "type": "boolean"
+          },
+          "roomCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "estimated": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "roomStats": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number",
+                "nullable": true
+              },
+              "mean": {
+                "type": "number",
+                "nullable": true
+              },
+              "max": {
+                "type": "number",
+                "nullable": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

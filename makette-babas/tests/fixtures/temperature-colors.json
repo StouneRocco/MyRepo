@@ -1,0 +1,125 @@
+{
+  "description": "Couleurs RGB attendues sur le site et le projecteur (BGR inversé côté OpenCV). Arrondi au plus proche, demi-unités vers le haut.",
+  "samples": [
+    {
+      "temperature": -5,
+      "rgb": [
+        37,
+        99,
+        235
+      ]
+    },
+    {
+      "temperature": 12,
+      "rgb": [
+        37,
+        99,
+        235
+      ]
+    },
+    {
+      "temperature": 13.5,
+      "rgb": [
+        22,
+        141,
+        224
+      ]
+    },
+    {
+      "temperature": 16,
+      "rgb": [
+        11,
+        183,
+        197
+      ]
+    },
+    {
+      "temperature": 18,
+      "rgb": [
+        20,
+        184,
+        166
+      ]
+    },
+    {
+      "temperature": 19.25,
+      "rgb": [
+        26,
+        189,
+        136
+      ]
+    },
+    {
+      "temperature": 21,
+      "rgb": [
+        34,
+        197,
+        94
+      ]
+    },
+    {
+      "temperature": 22.5,
+      "rgb": [
+        142,
+        201,
+        58
+      ]
+    },
+    {
+      "temperature": 23,
+      "rgb": [
+        178,
+        202,
+        45
+      ]
+    },
+    {
+      "temperature": 24,
+      "rgb": [
+        250,
+        204,
+        21
+      ]
+    },
+    {
+      "temperature": 26.2,
+      "rgb": [
+        249,
+        139,
+        22
+      ]
+    },
+    {
+      "temperature": 27,
+      "rgb": [
+        249,
+        115,
+        22
+      ]
+    },
+    {
+      "temperature": 28.5,
+      "rgb": [
+        244,
+        92,
+        45
+      ]
+    },
+    {
+      "temperature": 30,
+      "rgb": [
+        239,
+        68,
+        68
+      ]
+    },
+    {
+      "temperature": 45,
+      "rgb": [
+        239,
+        68,
+        68
+      ]
+    }
+  ]
+}

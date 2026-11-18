@@ -1,0 +1,615 @@
+{
+  "version": 1,
+  "trained_at": "2026-11-18T13:37:54.744533+00:00",
+  "source": "ressources/temperature_clean.xlsx ou TEMPERATURE_CSV",
+  "weather_source": "Open-Meteo Archive API",
+  "history_start": "2026-01-01",
+  "history_end": "2026-06-30",
+  "algorithm": "RandomForestRegressor",
+  "sklearn_version": "1.9.1",
+  "features": [
+    "temperature_2m_mean",
+    "temperature_2m_max",
+    "temperature_2m_min",
+    "month",
+    "weekday",
+    "day_of_year_sin",
+    "day_of_year_cos"
+  ],
+  "rooms": {
+    "03-01-S": {
+      "file": "rooms/03_01_s_3d91fdb4_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.923,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-02-S": {
+      "file": "rooms/03_02_s_2e0c434d_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.813,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-03-S": {
+      "file": "rooms/03_03_s_21f58e48_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.631,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-06-S": {
+      "file": "rooms/03_06_s_fd8f1df6_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 1.78,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-12-S": {
+      "file": "rooms/03_12_s_abacab74_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.42,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-13-S": {
+      "file": "rooms/03_13_s_62c7120d_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.158,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-14-S": {
+      "file": "rooms/03_14_s_d1f5d933_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.104,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-15-S": {
+      "file": "rooms/03_15_s_cf964094_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.546,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-16-S": {
+      "file": "rooms/03_16_s_154b7f3f_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.595,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-17-S": {
+      "file": "rooms/03_17_s_09f7c2ef_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.726,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-18-N": {
+      "file": "rooms/03_18_n_be62c321_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.724,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-19-N": {
+      "file": "rooms/03_19_n_b26314b2_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.128,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-20-N": {
+      "file": "rooms/03_20_n_d079d3a1_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.942,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-21-N": {
+      "file": "rooms/03_21_n_b83a4b9e_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.921,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-22-N": {
+      "file": "rooms/03_22_n_d936921f_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.799,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-23-N": {
+      "file": "rooms/03_23_n_2a1bfd70_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.631,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-24-N": {
+      "file": "rooms/03_24_n_3bbe0efe_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.706,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-25-N": {
+      "file": "rooms/03_25_n_ab76eb8d_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.95,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-26-N": {
+      "file": "rooms/03_26_n_af9dff73_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.089,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-27-N": {
+      "file": "rooms/03_27_n_b177ea91_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 1.806,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-28-N": {
+      "file": "rooms/03_28_n_4ac177a0_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.454,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-29-N": {
+      "file": "rooms/03_29_n_95e3f466_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.126,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-30-N": {
+      "file": "rooms/03_30_n_9d9c4d73_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.363,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "03-31-N": {
+      "file": "rooms/03_31_n_eeca07a9_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.542,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-01-S": {
+      "file": "rooms/04_01_s_6a3540bc_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.514,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-05-S": {
+      "file": "rooms/04_05_s_a48dd9f1_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.127,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-06-S": {
+      "file": "rooms/04_06_s_18d4babc_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.715,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-07-S": {
+      "file": "rooms/04_07_s_445a9b31_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.603,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-08-S": {
+      "file": "rooms/04_08_s_6f227a1f_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.387,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-09-S": {
+      "file": "rooms/04_09_s_cc22c70e_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.674,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-10-S": {
+      "file": "rooms/04_10_s_a8f349be_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.324,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-11-S": {
+      "file": "rooms/04_11_s_3af68411_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.194,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-12-S": {
+      "file": "rooms/04_12_s_9f8a3355_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.423,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-13-S": {
+      "file": "rooms/04_13_s_e130abb5_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.443,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-14-S": {
+      "file": "rooms/04_14_s_b0b4b08c_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.447,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-15-S": {
+      "file": "rooms/04_15_s_72e04eb8_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.101,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-16-S": {
+      "file": "rooms/04_16_s_430aaaf5_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.973,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-17-S": {
+      "file": "rooms/04_17_s_73b966db_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.106,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-18-N": {
+      "file": "rooms/04_18_n_04646a8c_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.379,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-19-N": {
+      "file": "rooms/04_19_n_c180a6b7_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.958,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-20-N": {
+      "file": "rooms/04_20_n_40602244_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.181,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-21-N": {
+      "file": "rooms/04_21_n_6395cb97_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.296,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-22-N": {
+      "file": "rooms/04_22_n_58df0a1f_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.267,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-23-N": {
+      "file": "rooms/04_23_n_ab175ac3_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.866,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-24-N": {
+      "file": "rooms/04_24_n_2bd5f50e_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 5.268,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-25-N": {
+      "file": "rooms/04_25_n_8b06bcab_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.753,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-26-N": {
+      "file": "rooms/04_26_n_2b02cb40_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.141,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-27-N": {
+      "file": "rooms/04_27_n_bea7cee2_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.528,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-28-N": {
+      "file": "rooms/04_28_n_a5364d88_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.222,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-30-N": {
+      "file": "rooms/04_30_n_f4969446_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.882,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-32-N": {
+      "file": "rooms/04_32_n_20390c6c_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.063,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-33-N": {
+      "file": "rooms/04_33_n_c9952eb1_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.413,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-34-N": {
+      "file": "rooms/04_34_n_a0440c98_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 4.228,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-36-N": {
+      "file": "rooms/04_36_n_6a3aef84_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 2.552,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-39-N": {
+      "file": "rooms/04_39_n_196d04b4_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 5.058,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-40-N": {
+      "file": "rooms/04_40_n_f7b3c163_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 3.283,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-41-N": {
+      "file": "rooms/04_41_n_48bbb0e2_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 1.848,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-42-N": {
+      "file": "rooms/04_42_n_64f860c8_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 1.178,
+        "test_days": 37,
+        "train_days": 144
+      }
+    },
+    "04-43-N": {
+      "file": "rooms/04_43_n_642d1d83_20261118T133754Z.joblib",
+      "training_days": 181,
+      "metrics": {
+        "mae_c": 1.384,
+        "test_days": 37,
+        "train_days": 144
+      }
+    }
+  },
+  "skipped_rooms": {},
+  "monthly_weather": {
+    "1": [
+      5.99,
+      9.08,
+      2.96
+    ],
+    "2": [
+      9.7,
+      12.7,
+      7.14
+    ],
+    "3": [
+      10.02,
+      14.59,
+      5.69
+    ],
+    "4": [
+      14.35,
+      19.97,
+      8.89
+    ],
+    "5": [
+      17.75,
+      22.68,
+      12.65
+    ],
+    "6": [
+      22.93,
+      28.64,
+      17.03
+    ],
+    "7": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "8": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "9": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "10": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "11": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "12": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

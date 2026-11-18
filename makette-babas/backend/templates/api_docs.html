@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documentation API · Maquette ESEO</title>
+  <link rel="stylesheet" href="{{ url_for('swagger_asset',filename='swagger-ui.css') }}">
+  <style>
+    body {margin:0;background:#fafafa;font-family:system-ui,sans-serif;color:#18313c}
+    .docs-header {padding:20px max(20px,calc((100% - 1460px)/2));background:#123d49;color:white}
+    .docs-header h1 {font-size:22px;margin:0 0 8px}
+    .docs-header p {margin:6px 0;line-height:1.5}
+    .docs-header a {color:#bfeee9}
+    #swagger-ui {max-width:1500px;margin:auto}
+    .swagger-ui .topbar {display:none}
+  </style>
+</head>
+<body>
+  <header class="docs-header">
+    <h1>API de la maquette ESEO</h1>
+    <p>Ouvre <strong>Connexion → POST /api/login</strong>, clique <strong>Try it out</strong>,
+      saisis ton identifiant et ton mot de passe, puis <strong>Execute</strong>.
+      Le jeton reçu est appliqué automatiquement aux appels suivants.</p>
+    <p>Tu peux aussi coller un jeton dans <strong>Authorize</strong>, sans ajouter « Bearer ».
+      Les commandes de projection nécessitent un compte opérateur ou administrateur.</p>
+    <p><a href="/">Retour à l’application</a> · <a href="{{ url_for('openapi_spec') }}">Spécification OpenAPI JSON</a></p>
+  </header>
+  <div id="swagger-ui"></div>
+  <script src="{{ url_for('swagger_asset',filename='swagger-ui-bundle.js') }}"></script>
+  <script>
+    window.ui=SwaggerUIBundle({
+      url: {{ url_for('openapi_spec')|tojson }},
+      dom_id:'#swagger-ui',
+      deepLinking:true,
+      docExpansion:'none',
+      displayRequestDuration:true,
+      persistAuthorization:false,
+      validatorUrl:null,
+      presets:[SwaggerUIBundle.presets.apis],
+      responseInterceptor(response) {
+        // Uniquement le jeton renvoyé par une connexion demandée dans Swagger.
+        const path=new URL(response.url,window.location.href).pathname;
+        if(path==='/api/login'&&response.status===200){
+          try {
+            const data=response.obj||JSON.parse(response.text);
+            if(typeof data.token==='string')window.ui.preauthorizeApiKey('bearerAuth',data.token);
+          } catch(error) {console.warn('Connexion reçue ; utilise Authorize pour appliquer le jeton.');}
+        }
+        return response;
+      }
+    });
+  </script>
+</body>
+</html>
