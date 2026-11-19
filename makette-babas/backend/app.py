@@ -307,7 +307,9 @@ register_temperature_views(app, temperatures, auth_required)
 from badgeage_views import register_badgeage_views
 register_badgeage_views(app, auth_required)
 from electrical_views import register_electrical_views
+from electricity_prediction import register_energy_prediction
 register_electrical_views(app, auth_required)
+register_energy_prediction(app, auth_required)
 from temperature_prediction import register_prediction_views
 register_prediction_views(app, auth_required)
 from view_state import SharedView, register_shared_view

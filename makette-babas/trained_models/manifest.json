@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "trained_at": "2026-11-18T13:37:54.744533+00:00",
+  "trained_at": "2026-11-19T08:15:57.727401+00:00",
   "source": "ressources/temperature_clean.xlsx ou TEMPERATURE_CSV",
   "weather_source": "Open-Meteo Archive API",
   "history_start": "2026-01-01",
@@ -18,7 +18,7 @@
   ],
   "rooms": {
     "03-01-S": {
-      "file": "rooms/03_01_s_3d91fdb4_20261118T133754Z.joblib",
+      "file": "rooms/03_01_s_3d91fdb4_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.923,
@@ -27,7 +27,7 @@
       }
     },
     "03-02-S": {
-      "file": "rooms/03_02_s_2e0c434d_20261118T133754Z.joblib",
+      "file": "rooms/03_02_s_2e0c434d_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.813,
@@ -36,7 +36,7 @@
       }
     },
     "03-03-S": {
-      "file": "rooms/03_03_s_21f58e48_20261118T133754Z.joblib",
+      "file": "rooms/03_03_s_21f58e48_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.631,
@@ -45,7 +45,7 @@
       }
     },
     "03-06-S": {
-      "file": "rooms/03_06_s_fd8f1df6_20261118T133754Z.joblib",
+      "file": "rooms/03_06_s_fd8f1df6_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 1.78,
@@ -54,7 +54,7 @@
       }
     },
     "03-12-S": {
-      "file": "rooms/03_12_s_abacab74_20261118T133754Z.joblib",
+      "file": "rooms/03_12_s_abacab74_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.42,
@@ -63,7 +63,7 @@
       }
     },
     "03-13-S": {
-      "file": "rooms/03_13_s_62c7120d_20261118T133754Z.joblib",
+      "file": "rooms/03_13_s_62c7120d_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.158,
@@ -72,7 +72,7 @@
       }
     },
     "03-14-S": {
-      "file": "rooms/03_14_s_d1f5d933_20261118T133754Z.joblib",
+      "file": "rooms/03_14_s_d1f5d933_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.104,
@@ -81,7 +81,7 @@
       }
     },
     "03-15-S": {
-      "file": "rooms/03_15_s_cf964094_20261118T133754Z.joblib",
+      "file": "rooms/03_15_s_cf964094_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.546,
@@ -90,7 +90,7 @@
       }
     },
     "03-16-S": {
-      "file": "rooms/03_16_s_154b7f3f_20261118T133754Z.joblib",
+      "file": "rooms/03_16_s_154b7f3f_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.595,
@@ -99,7 +99,7 @@
       }
     },
     "03-17-S": {
-      "file": "rooms/03_17_s_09f7c2ef_20261118T133754Z.joblib",
+      "file": "rooms/03_17_s_09f7c2ef_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.726,
@@ -108,7 +108,7 @@
       }
     },
     "03-18-N": {
-      "file": "rooms/03_18_n_be62c321_20261118T133754Z.joblib",
+      "file": "rooms/03_18_n_be62c321_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.724,
@@ -117,7 +117,7 @@
       }
     },
     "03-19-N": {
-      "file": "rooms/03_19_n_b26314b2_20261118T133754Z.joblib",
+      "file": "rooms/03_19_n_b26314b2_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.128,
@@ -126,7 +126,7 @@
       }
     },
     "03-20-N": {
-      "file": "rooms/03_20_n_d079d3a1_20261118T133754Z.joblib",
+      "file": "rooms/03_20_n_d079d3a1_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.942,
@@ -135,7 +135,7 @@
       }
     },
     "03-21-N": {
-      "file": "rooms/03_21_n_b83a4b9e_20261118T133754Z.joblib",
+      "file": "rooms/03_21_n_b83a4b9e_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.921,
@@ -144,7 +144,7 @@
       }
     },
     "03-22-N": {
-      "file": "rooms/03_22_n_d936921f_20261118T133754Z.joblib",
+      "file": "rooms/03_22_n_d936921f_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.799,
@@ -153,7 +153,7 @@
       }
     },
     "03-23-N": {
-      "file": "rooms/03_23_n_2a1bfd70_20261118T133754Z.joblib",
+      "file": "rooms/03_23_n_2a1bfd70_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.631,
@@ -162,7 +162,7 @@
       }
     },
     "03-24-N": {
-      "file": "rooms/03_24_n_3bbe0efe_20261118T133754Z.joblib",
+      "file": "rooms/03_24_n_3bbe0efe_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.706,
@@ -171,7 +171,7 @@
       }
     },
     "03-25-N": {
-      "file": "rooms/03_25_n_ab76eb8d_20261118T133754Z.joblib",
+      "file": "rooms/03_25_n_ab76eb8d_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.95,
@@ -180,7 +180,7 @@
       }
     },
     "03-26-N": {
-      "file": "rooms/03_26_n_af9dff73_20261118T133754Z.joblib",
+      "file": "rooms/03_26_n_af9dff73_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.089,
@@ -189,7 +189,7 @@
       }
     },
     "03-27-N": {
-      "file": "rooms/03_27_n_b177ea91_20261118T133754Z.joblib",
+      "file": "rooms/03_27_n_b177ea91_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 1.806,
@@ -198,7 +198,7 @@
       }
     },
     "03-28-N": {
-      "file": "rooms/03_28_n_4ac177a0_20261118T133754Z.joblib",
+      "file": "rooms/03_28_n_4ac177a0_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.454,
@@ -207,7 +207,7 @@
       }
     },
     "03-29-N": {
-      "file": "rooms/03_29_n_95e3f466_20261118T133754Z.joblib",
+      "file": "rooms/03_29_n_95e3f466_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.126,
@@ -216,7 +216,7 @@
       }
     },
     "03-30-N": {
-      "file": "rooms/03_30_n_9d9c4d73_20261118T133754Z.joblib",
+      "file": "rooms/03_30_n_9d9c4d73_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.363,
@@ -225,7 +225,7 @@
       }
     },
     "03-31-N": {
-      "file": "rooms/03_31_n_eeca07a9_20261118T133754Z.joblib",
+      "file": "rooms/03_31_n_eeca07a9_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.542,
@@ -234,7 +234,7 @@
       }
     },
     "04-01-S": {
-      "file": "rooms/04_01_s_6a3540bc_20261118T133754Z.joblib",
+      "file": "rooms/04_01_s_6a3540bc_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.514,
@@ -243,7 +243,7 @@
       }
     },
     "04-05-S": {
-      "file": "rooms/04_05_s_a48dd9f1_20261118T133754Z.joblib",
+      "file": "rooms/04_05_s_a48dd9f1_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.127,
@@ -252,7 +252,7 @@
       }
     },
     "04-06-S": {
-      "file": "rooms/04_06_s_18d4babc_20261118T133754Z.joblib",
+      "file": "rooms/04_06_s_18d4babc_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.715,
@@ -261,7 +261,7 @@
       }
     },
     "04-07-S": {
-      "file": "rooms/04_07_s_445a9b31_20261118T133754Z.joblib",
+      "file": "rooms/04_07_s_445a9b31_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.603,
@@ -270,7 +270,7 @@
       }
     },
     "04-08-S": {
-      "file": "rooms/04_08_s_6f227a1f_20261118T133754Z.joblib",
+      "file": "rooms/04_08_s_6f227a1f_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.387,
@@ -279,7 +279,7 @@
       }
     },
     "04-09-S": {
-      "file": "rooms/04_09_s_cc22c70e_20261118T133754Z.joblib",
+      "file": "rooms/04_09_s_cc22c70e_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.674,
@@ -288,7 +288,7 @@
       }
     },
     "04-10-S": {
-      "file": "rooms/04_10_s_a8f349be_20261118T133754Z.joblib",
+      "file": "rooms/04_10_s_a8f349be_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.324,
@@ -297,7 +297,7 @@
       }
     },
     "04-11-S": {
-      "file": "rooms/04_11_s_3af68411_20261118T133754Z.joblib",
+      "file": "rooms/04_11_s_3af68411_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.194,
@@ -306,7 +306,7 @@
       }
     },
     "04-12-S": {
-      "file": "rooms/04_12_s_9f8a3355_20261118T133754Z.joblib",
+      "file": "rooms/04_12_s_9f8a3355_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.423,
@@ -315,7 +315,7 @@
       }
     },
     "04-13-S": {
-      "file": "rooms/04_13_s_e130abb5_20261118T133754Z.joblib",
+      "file": "rooms/04_13_s_e130abb5_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.443,
@@ -324,7 +324,7 @@
       }
     },
     "04-14-S": {
-      "file": "rooms/04_14_s_b0b4b08c_20261118T133754Z.joblib",
+      "file": "rooms/04_14_s_b0b4b08c_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.447,
@@ -333,7 +333,7 @@
       }
     },
     "04-15-S": {
-      "file": "rooms/04_15_s_72e04eb8_20261118T133754Z.joblib",
+      "file": "rooms/04_15_s_72e04eb8_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.101,
@@ -342,7 +342,7 @@
       }
     },
     "04-16-S": {
-      "file": "rooms/04_16_s_430aaaf5_20261118T133754Z.joblib",
+      "file": "rooms/04_16_s_430aaaf5_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.973,
@@ -351,7 +351,7 @@
       }
     },
     "04-17-S": {
-      "file": "rooms/04_17_s_73b966db_20261118T133754Z.joblib",
+      "file": "rooms/04_17_s_73b966db_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.106,
@@ -360,7 +360,7 @@
       }
     },
     "04-18-N": {
-      "file": "rooms/04_18_n_04646a8c_20261118T133754Z.joblib",
+      "file": "rooms/04_18_n_04646a8c_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.379,
@@ -369,7 +369,7 @@
       }
     },
     "04-19-N": {
-      "file": "rooms/04_19_n_c180a6b7_20261118T133754Z.joblib",
+      "file": "rooms/04_19_n_c180a6b7_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.958,
@@ -378,7 +378,7 @@
       }
     },
     "04-20-N": {
-      "file": "rooms/04_20_n_40602244_20261118T133754Z.joblib",
+      "file": "rooms/04_20_n_40602244_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.181,
@@ -387,7 +387,7 @@
       }
     },
     "04-21-N": {
-      "file": "rooms/04_21_n_6395cb97_20261118T133754Z.joblib",
+      "file": "rooms/04_21_n_6395cb97_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.296,
@@ -396,7 +396,7 @@
       }
     },
     "04-22-N": {
-      "file": "rooms/04_22_n_58df0a1f_20261118T133754Z.joblib",
+      "file": "rooms/04_22_n_58df0a1f_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.267,
@@ -405,7 +405,7 @@
       }
     },
     "04-23-N": {
-      "file": "rooms/04_23_n_ab175ac3_20261118T133754Z.joblib",
+      "file": "rooms/04_23_n_ab175ac3_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.866,
@@ -414,7 +414,7 @@
       }
     },
     "04-24-N": {
-      "file": "rooms/04_24_n_2bd5f50e_20261118T133754Z.joblib",
+      "file": "rooms/04_24_n_2bd5f50e_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 5.268,
@@ -423,7 +423,7 @@
       }
     },
     "04-25-N": {
-      "file": "rooms/04_25_n_8b06bcab_20261118T133754Z.joblib",
+      "file": "rooms/04_25_n_8b06bcab_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.753,
@@ -432,7 +432,7 @@
       }
     },
     "04-26-N": {
-      "file": "rooms/04_26_n_2b02cb40_20261118T133754Z.joblib",
+      "file": "rooms/04_26_n_2b02cb40_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.141,
@@ -441,7 +441,7 @@
       }
     },
     "04-27-N": {
-      "file": "rooms/04_27_n_bea7cee2_20261118T133754Z.joblib",
+      "file": "rooms/04_27_n_bea7cee2_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.528,
@@ -450,7 +450,7 @@
       }
     },
     "04-28-N": {
-      "file": "rooms/04_28_n_a5364d88_20261118T133754Z.joblib",
+      "file": "rooms/04_28_n_a5364d88_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.222,
@@ -459,7 +459,7 @@
       }
     },
     "04-30-N": {
-      "file": "rooms/04_30_n_f4969446_20261118T133754Z.joblib",
+      "file": "rooms/04_30_n_f4969446_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.882,
@@ -468,7 +468,7 @@
       }
     },
     "04-32-N": {
-      "file": "rooms/04_32_n_20390c6c_20261118T133754Z.joblib",
+      "file": "rooms/04_32_n_20390c6c_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.063,
@@ -477,7 +477,7 @@
       }
     },
     "04-33-N": {
-      "file": "rooms/04_33_n_c9952eb1_20261118T133754Z.joblib",
+      "file": "rooms/04_33_n_c9952eb1_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.413,
@@ -486,7 +486,7 @@
       }
     },
     "04-34-N": {
-      "file": "rooms/04_34_n_a0440c98_20261118T133754Z.joblib",
+      "file": "rooms/04_34_n_a0440c98_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 4.228,
@@ -495,7 +495,7 @@
       }
     },
     "04-36-N": {
-      "file": "rooms/04_36_n_6a3aef84_20261118T133754Z.joblib",
+      "file": "rooms/04_36_n_6a3aef84_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 2.552,
@@ -504,7 +504,7 @@
       }
     },
     "04-39-N": {
-      "file": "rooms/04_39_n_196d04b4_20261118T133754Z.joblib",
+      "file": "rooms/04_39_n_196d04b4_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 5.058,
@@ -513,7 +513,7 @@
       }
     },
     "04-40-N": {
-      "file": "rooms/04_40_n_f7b3c163_20261118T133754Z.joblib",
+      "file": "rooms/04_40_n_f7b3c163_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 3.283,
@@ -522,7 +522,7 @@
       }
     },
     "04-41-N": {
-      "file": "rooms/04_41_n_48bbb0e2_20261118T133754Z.joblib",
+      "file": "rooms/04_41_n_48bbb0e2_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 1.848,
@@ -531,7 +531,7 @@
       }
     },
     "04-42-N": {
-      "file": "rooms/04_42_n_64f860c8_20261118T133754Z.joblib",
+      "file": "rooms/04_42_n_64f860c8_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 1.178,
@@ -540,7 +540,7 @@
       }
     },
     "04-43-N": {
-      "file": "rooms/04_43_n_642d1d83_20261118T133754Z.joblib",
+      "file": "rooms/04_43_n_642d1d83_20261119T081557Z.joblib",
       "training_days": 181,
       "metrics": {
         "mae_c": 1.384,

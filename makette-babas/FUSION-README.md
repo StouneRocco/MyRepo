@@ -18,3 +18,14 @@ La prédiction est intégrée à la vue « Températures ». Pour une date absen
 - Le lanceur de tests Python a été démarré, mais les tests nécessitant Flask n'ont pas pu s'exécuter dans l'environnement de préparation car Flask n'y était pas installé. Les tests indépendants exécutés par le lanceur ont réussi.
 - La compilation frontend n'a pas été validée ici : l'installation npm a été interrompue par la limite de temps de l'environnement.
 - Les trois archives d'origine ne sont pas modifiées.
+
+
+## Prévision électrique intégrée
+
+La prévision électrique est désormais accessible directement depuis l'espace **Électricité**, via le sélecteur **Consommation / Prévision IA**. En mode Prévision IA, le modèle calcule automatiquement le profil horaire pour la date et l'étage sélectionnés, puis colore le même plan par salle. Le changement de date ou d'étage relance le calcul ; il n'y a plus de page ni d'onglet séparé pour la prédiction.
+
+### Affichage électrique automatique selon la date
+
+L'onglet **Électricité** conserve une seule interface. À chaque changement de date, le frontend lit les bornes `first` et `last` des mesures électriques importées : une date comprise dans cette période affiche les mesures historiques ; une date antérieure ou postérieure déclenche automatiquement `/api/predictions/electricity` et affiche les prévisions directement sur le plan. Aucun sous-onglet « Consommation / Prévision » n'est nécessaire.
+
+Le modèle de prévision doit être généré à partir de la base BOS configurée avec `python training/train_electricity.py` (après import des données électriques).
